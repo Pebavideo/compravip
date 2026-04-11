@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Ícone VIP SHOP</title>
+</head>
+<body>
+    <canvas id="iconCanvas" width="192" height="192" style="border: 1px solid #ccc;"></canvas>
+    <br><br>
+    <button onclick="generateIcon()">Gerar Ícone</button>
+    <button onclick="downloadIcon()">Baixar Ícone</button>
+    
+    <script>
+        function generateIcon() {
+            const canvas = document.getElementById('iconCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Fundo preto sólido
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 192, 192);
+            
+            // Gradiente laranja metálico luxuoso
+            const gradient = ctx.createLinearGradient(20, 70, 172, 122);
+            gradient.addColorStop(0, '#FF4500');
+            gradient.addColorStop(0.3, '#FF6B35');
+            gradient.addColorStop(0.6, '#FF8C42');
+            gradient.addColorStop(1, '#FFA947');
+            
+            // Corpo do carro esportivo luxuoso
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(25, 125);
+            ctx.lineTo(45, 95);
+            ctx.lineTo(75, 75);
+            ctx.lineTo(117, 75);
+            ctx.lineTo(147, 95);
+            ctx.lineTo(167, 125);
+            ctx.lineTo(155, 135);
+            ctx.lineTo(25, 135);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Contorno dourado para efeito de luxo
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            
+            // Janelas com efeito de reflexo
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(55, 80, 30, 18);
+            ctx.fillRect(92, 80, 30, 18);
+            
+            // Reflexo nas janelas
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.fillRect(55, 80, 30, 4);
+            ctx.fillRect(92, 80, 30, 4);
+            
+            // Rodas com detalhes de luxo
+            ctx.fillStyle = '#2c2c2c';
+            ctx.beginPath();
+            ctx.arc(50, 135, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(142, 135, 14, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Aros das rodas dourados
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(50, 135, 14, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(142, 135, 14, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Centro das rodas
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(50, 135, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(142, 135, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Texto "VIP SHOP" embaixo
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('VIP SHOP', 96, 165);
+            
+            // Brilho de luxo no carro
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.4)';
+            ctx.fillRect(65, 65, 50, 2);
+            
+            // Detalhes de diamante 💎
+            ctx.fillStyle = '#FFD700';
+            ctx.font = '12px Arial';
+            ctx.fillText('💎', 96, 50);
+        }
+        
+        function downloadIcon() {
+            const canvas = document.getElementById('iconCanvas');
+            const link = document.createElement('a');
+            link.download = 'icon-192.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Gerar automaticamente ao carregar
+        window.onload = generateIcon;
+    </script>
+</body>
+</html>

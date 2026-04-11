@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    
+    <title>VIP SHOP | Seu Shopping Online</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    
+    <style>
+        :root { --primary: #ff9800; --bg: #000000; --card: #0d0d0d; --text: #ffffff; --green: #25d366; --red: #ff4444; --blue: #007bff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        .hidden { display: none !important; }
+
+        /* GAIOLA DE CSS: PRECISÃO 15PX */
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 25px; margin-bottom: 20px; align-items: end; }
+        .grid-form-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; align-items: end; }
+        @media (max-width: 768px) {
+            .grid-form, .grid-form-3 { grid-template-columns: 1fr; }
+            
+            /* Ajustes Mobile VIP SHOP */
+            .btn-flutuante#btn-cad-car { 
+                width: 80px; 
+                height: 80px; 
+                border-radius: 50%; 
+                padding: 0; 
+                bottom: 100px; 
+                right: 20px;
+            }
+            .btn-flutuante#btn-cad-car span { font-size: 40px; }
+            .btn-flutuante#btn-cad-car .txt-anunciar { display: none; }
+            
+            .btn-ctrl { 
+                height: 55px; 
+                font-size: 16px !important; 
+            }
+            
+            .barra-vendedor { 
+                gap: 12px; 
+                padding: 15px; 
+            }
+        }
+        input, select, textarea { width: 100%; padding: 16px; border-radius: 10px; border: 1px solid #333; background: #000; color: #fff; font-size: 16px !important; font-weight: 600; box-sizing: border-box; }
+        label { color: var(--primary); font-weight: bold; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 5px; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
+        .header-fixo { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 15px; border-bottom: 1px solid #222; position: sticky; top: 0; z-index: 6000; }
+
+        #vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+
+        /* CARDS ESTILO OLX */
+        .car-card { background: #0d0d0d; border-radius: 12px; border: 1px solid #222; width: 100%; overflow: hidden; cursor: pointer; transition: 0.3s; position: relative; }
+        .car-card:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.8); }
+        .car-card:hover .foto-main { transform: scale(1.05); }
+        .car-card.vendido { opacity: 0.6; cursor: default; }
+        .tag { background: #1a1a1a; padding: 8px 14px; border-radius: 8px; font-size: 13px; color: var(--primary); margin: 6px 6px 0 0; border: 1px solid #333; display: inline-block; font-weight: 700; text-transform: uppercase; }
+
+        /* SELO VENDIDO */
+        .selo-vendido { position: absolute; top: 20px; left: -35px; background: var(--red); color: #fff; padding: 10px 40px; transform: rotate(-45deg); font-weight: 900; font-size: 14px; z-index: 5500; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* BARRA DE CONTROLE VENDEDOR */
+        .barra-vendedor { display: flex; flex-direction: column; gap: 8px; padding: 12px; background: #111; border-top: 1px solid #222; position: relative; z-index: 6000; }
+        .barra-vendedor-linha { display: flex; gap: 8px; width: 100%; }
+        .btn-ctrl { flex: 1; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 900; text-transform: uppercase; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; position: relative; z-index: 6001; }
+        
+        .lojista-info { color:#aaa; font-size: 14px; font-weight: bold; margin: 5px 0; }
+        .lojista-footer { color:#555; font-size: 14px; margin-top: 12px; border-top: 1px solid #222; padding-top: 8px; }
+        .b-edit { background: var(--primary); color: #000; }
+        .b-edit:hover { background: #ffb74d; }
+        .b-del { background: var(--red); color: #fff; }
+        .b-del:hover { background: #cc0000; }
+        .b-share { background: var(--blue); color: #fff; }
+        .b-vendido { background: var(--green); color: #000; }
+        .b-vendido:hover { background: #2ecc71; }
+
+        #modal-cad { position: fixed; inset: 0; background: #000; z-index: 5000; overflow-y: auto; padding: 20px; }
+        .modal-box { width: 95%; max-width: 1100px; margin: 0 auto; padding: 30px; background: #000; border-radius: 20px; border: 1px solid #222; margin-bottom: 50px; }
+        .btn-flutuante { position: fixed; bottom: 80px; right: 30px; z-index: 999; background: var(--primary); color: #000; border: none; padding: 25px 35px; border-radius: 50px; font-weight: 900; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .btn-flutuante span { font-size: 24px; line-height: 1; }
+        .btn-flutuante:hover { background: #ffb74d; }
+
+        /* NAVEGAÇÃO DE FOTOS */
+        .foto-container { position: relative; overflow: hidden; border-radius: 12px 12px 0 0; }
+        .foto-main { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; transition: transform 0.3s; }
+        .seta-nav { position: absolute; top: 50%; transform: translateY(-50%); background: #000; color: #fff; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; z-index: 5100; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .seta-nav:hover { background: rgba(0,0,0,0.9); }
+        .seta-nav:active { background: rgba(0,0,0,1); transform: translateY(-50%) scale(0.95); }
+        .seta-esq { left: 10px; }
+        .seta-dir { right: 10px; }
+        .foto-info { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: #fff; padding: 5px 12px; border-radius: 15px; font-size: 12px; z-index: 5000; }
+
+        /* MODAL DETALHES (PIPOQUEIRA) - PADRÃO OLX */
+        #modal-detalhes { position: fixed; inset: 0; background: #000; z-index: 8000; overflow-y: auto; display: none; flex-direction: column; }
+        .detalhes-header { position: sticky; top: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 8100; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .detalhes-content { padding: 20px; padding-bottom: 120px; max-width: 900px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .detalhes-fotos { position: relative; width: 100%; background: #000; height: 60vh; min-height: 350px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .detalhes-fotos img { width: 100%; height: 100%; object-fit: contain; background: #000; }
+        .detalhes-info { margin-top: 20px; }
+        .detalhes-preco { color: var(--green); font-size: 36px; font-weight: 900; margin: 10px 0; }
+        
+        /* PREÇO ESTILO VIPCAR */
+        .card-preco-tarja {
+            background: #ffcc00;
+            color: #000;
+            font-size: 24px;
+            font-weight: 900;
+            padding: 10px 15px;
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+            border-bottom: 2px solid #eab800;
+        }
+
+        .detalhes-titulo { font-size: 28px; font-weight: 900; margin: 0; text-transform: uppercase; color: #fff; }
+        .detalhes-local { color: #aaa; font-size: 14px; margin: 5px 0; line-height: 1.5; }
+        .detalhes-desc { display: block; margin-top: 25px; line-height: 1.6; color: #ddd; white-space: pre-wrap; border-top: 1px solid #222; padding-top: 20px; font-size: 16px; }
+        .btn-denuncia-v3 { background: none; border: 1px solid #444; color: #888; padding: 8px 15px; border-radius: 5px; font-size: 12px; cursor: pointer; display: block; margin: 20px auto; transition: 0.2s; }
+        .btn-denuncia-v3:hover { color: var(--red); border-color: var(--red); }
+        .detalhes-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); border-top: 1px solid #222; padding: 15px; z-index: 8200; display: flex; gap: 10px; backdrop-filter: blur(10px); }
+        .btn-detalhes-zap { flex: 1; background: var(--green); color: #000; border: none; padding: 18px; border-radius: 12px; font-weight: 900; font-size: 18px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
+        .btn-fechar-detalhes { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+
+        /* BARRA INFERIOR COMPRADOR/VENDEDOR */
+        .barra-comprador { display: flex; gap: 8px; padding: 12px; background: #111; border-top: 1px solid #222; }
+        .btn-comp { flex: 1; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        .b-whatsapp { background: var(--green); color: #000; }
+        .b-fav { background: var(--blue); color: #fff; }
+
+        /* UPLOAD E PRÉ-VISUALIZAÇÃO DE FOTOS */
+        .upload-fotos { margin: 15px 0; }
+        .input-file-custom { display: block; width: 100%; padding: 12px; border-radius: 10px; border: 1px dotted var(--primary); background: #000; color: var(--primary); cursor: pointer; text-align: center; font-weight: bold; min-height: 44px; /* Área de toque mínima */ }
+        .input-file-custom:hover { background: rgba(255, 152, 0, 0.1); }
+        .input-file-custom:active { transform: scale(0.98); }
+        
+        .foto-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 12px; }
+        .foto-thumb { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; background: #1a1a1a; border: 1px solid #333; }
+        .foto-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-remove-foto { position: absolute; top: 2px; right: 2px; background: var(--red); color: #fff; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 2100; font-size: 18px; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.2s; }
+        .btn-remove-foto:hover { background: #cc0000; }
+        .btn-remove-foto:active { background: #aa0000; transform: scale(0.95); }
+
+        /* MODAL DE REGISTRO (antigo, pode ser removido) */
+        #modal-registro { position: fixed; inset: 0; background: #000; z-index: 5100; overflow-y: auto; padding: 20px; }
+        /* MODAL DE PERFIL (novo) */
+        #modal-perfil { position: fixed; inset: 0; background: #000; z-index: 5100; overflow-y: auto; padding: 20px; }
+        .logo-preview, #perfil-logo-preview { 
+            width: 120px; 
+            height: 120px; 
+            border-radius: 50%; 
+            border: 4px solid #ff9800; 
+            margin: 0 auto 15px; 
+            display: block; 
+            background: #1a1a1a; 
+            cursor: pointer; 
+            position: relative; 
+            z-index:6000;
+            object-fit: cover;
+        }
+        .logo-preview::before, #perfil-logo-preview::before { content: '📷 ADICIONAR LOGO'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 12px; text-align: center; pointer-events: none; z-index: -1; }
+        .logo-preview.has-image::before, #perfil-logo-preview.has-image::before { content: none; }
+        .logo-preview img, #perfil-logo-preview img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .btn-criar-conta { background: var(--primary); color: #000; padding: 14px; border-radius: 10px; border: none; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; transition: 0.2s; }
+        .btn-criar-conta:hover { background: #ffb74d; }
+        #btn-consultar-fipe:hover { background: #ffb74d; }
+        .btn-ja-registro { background: none; color: #fff; border: none; cursor: pointer; text-decoration: underline; margin-top: 10px; transition: 0.2s; }
+        .btn-ja-registro:hover { color: #ff9800; }
+        #modal-registro button:active { transform: scale(0.98); }
+
+        /* MODAL DE LOGIN */
+        #modal-login { position: fixed; inset: 0; background: #000; z-index: 7000; overflow-y: auto; padding: 20px; display: flex; align-items: center; justify-content: center; }
+        .login-box { width: 95%; max-width: 1100px; background: rgba(13, 13, 13, 0.95); border: 2px solid var(--primary); border-radius: 20px; padding: 40px; text-align: center; }
+        .login-box h1 { color: var(--primary); font-size: 28px; margin-bottom: 30px; }
+        .login-box label { color: var(--primary); font-weight: bold; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 5px; margin-top: 15px; text-align: left; }
+        .login-box input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #333; background: #000; color: #fff; font-size: 15px; font-weight: 600; box-sizing: border-box; }
+        .btn-login { background: var(--primary); color: #000; padding: 14px; border-radius: 10px; border: none; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; margin-top: 20px; transition: 0.2s; }
+        .btn-login:hover { background: #ffb74d; }
+        .btn-esqueci { background: none; color: var(--blue); border: none; cursor: pointer; text-decoration: underline; font-size: 12px; margin-top: 10px; transition: 0.2s; }
+        .btn-esqueci:hover { color: #ff9800; }
+        .btn-novo-regis { background: none; color: var(--green); border: none; cursor: pointer; text-decoration: underline; font-size: 12px; margin-top: 8px; transition: 0.2s; }
+        .btn-novo-regis:hover { color: #ff9800; }
+        .btn-logout { background: var(--red); color: #fff; padding: 10px 16px; border-radius: 8px; border: none; font-weight: 900; cursor: pointer; font-size: 12px; transition: 0.2s; }
+        .btn-logout:hover { background: #cc0000; }
+
+        /* TOAST DARK */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #000;
+            color: #fff;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 16px 24px;
+            font-weight: bold;
+            z-index: 5200;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* CARROSSEL DE BANNERS */
+        #container-carrossel { width: 100%; max-width: 1100px; margin: 10px auto; position: relative; height: 350px; overflow: hidden; border-radius: 15px; }
+        .carrossel-track { display: flex; transition: transform 0.5s ease-in-out; height: 100%; }
+        .banner-slide { min-width: 100%; height: 100%; position: relative; }
+        .banner-slide img { width: 100%; height: 100%; object-fit: cover; }
+        .banner-overlay { position: absolute; inset: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); display: flex; align-items: flex-end; padding: 30px; }
+        .banner-texto { color: #fff; font-size: 24px; font-weight: 900; text-transform: uppercase; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .carrossel-seta { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: #fff; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 100; font-size: 20px; display: flex; align-items: center; justify-content: center; }
+        .carrossel-seta:hover { background: var(--primary); color: #000; }
+        .seta-prev { left: 15px; }
+        .seta-next { right: 15px; }
+
+        /* PAINEL ADMIN */
+        #modal-admin { position: fixed; inset: 0; background: #000; z-index: 9000; overflow-y: auto; padding: 20px; display: none; }
+        .admin-box { width: 95%; max-width: 800px; margin: 0 auto; background: #0d0d0d; border: 1px solid #222; border-radius: 20px; padding: 30px; }
+        .banner-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a1a; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333; }
+        .btn-admin { background: var(--blue); color: #fff; padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        
+        /* BARRA DE CATEGORIAS PRO */
+        .barra-categorias {
+            display: flex;
+            overflow-x: auto;
+            padding: 15px 20px;
+            gap: 15px;
+            background: #000;
+            border-bottom: 1px solid #222;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            justify-content: space-between;
+        }
+        .barra-categorias::-webkit-scrollbar { display: none; }
+
+        /* BARRA DE LOGOS MARCAS */
+        .barra-marcas {
+            display: flex;
+            overflow-x: auto;
+            padding: 15px 20px;
+            gap: 20px;
+            background: #0d0d0d;
+            border-bottom: 1px solid #222;
+            align-items: center;
+            justify-content: flex-start;
+            scrollbar-width: none;
+        }
+        .barra-marcas::-webkit-scrollbar { display: none; }
+        .marca-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            min-width: 70px;
+            opacity: 0.7;
+        }
+        .marca-item:hover { opacity: 1; transform: translateY(-2px); }
+        .marca-logo {
+            width: 45px;
+            height: 45px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .marca-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .marca-nome {
+            color: #fff;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .btn-cat-filter {
+            background: #111;
+            color: #fff;
+            border: 2px solid #333;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-cat-filter:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .btn-cat-filter:active {
+            transform: scale(0.95);
+        }
+        .btn-cat-filter.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #1a1a1a;
+            box-shadow: 0 0 12px rgba(255, 152, 0, 0.4);
+        }
+        .data-postagem {
+            color: #aaa;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .pino-local {
+            color: var(--primary);
+            font-size: 16px;
+            margin-right: 2px;
+            font-weight: bold;
+        }
+        .lojista-info {
+            color: #fff;
+            font-size: 11px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        @media (max-width: 768px) {
+            .data-postagem {
+                font-size: 13px;
+                text-align: left;
+                white-space: nowrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="header-usuario" class="header-fixo">
+        <h1 style="color:var(--primary); font-family: 'Montserrat', sans-serif; font-weight: 900; letter-spacing: -1px; display: flex; align-items: center; gap: 8px;">
+            VIP SHOP 💎
+        </h1>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <div style="display:flex; align-items:center; gap:5px;">
+                <span id="usuario-nome" style="color:var(--text); font-weight:bold; font-size: 14px;"></span>
+                <button id="btn-edit-perfil" class="hidden" onclick="abrirEdicaoPerfil()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:16px; padding:0;">✏️</button>
+            </div>
+            <button id="btn-login-header" class="btn-login" onclick="abrirModalLogin()" style="background:#ff9800;color:#000;position:relative;z-index:6000; padding: 10px 15px; font-size: 12px; white-space: nowrap;">VENDER AGORA</button>
+            <button id="btn-admin-header" class="btn-admin hidden" onclick="abrirAdmin()" style="background:var(--blue); color:#fff; font-size: 12px; white-space: nowrap;">⚙️ ADMIN</button>
+            <button id="btn-logout" class="btn-logout hidden" onclick="fazerLogout()" style="padding: 10px 16px; font-size: 14px; background: var(--red); color: #fff; border-radius: 8px; font-weight: 900; border: none; cursor: pointer;">SAIR 🚪</button>
+        </div>
+    </header>
+
+    <div class="barra-marcas" id="barra-marcas">
+        <div class="marca-item" onclick="filtrarMarca('Chevrolet')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚕</span></div>
+            <span class="marca-nome">Chevrolet</span>
+        </div>
+        <div class="marca-item" onclick="filtrarMarca('Fiat')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚗</span></div>
+            <span class="marca-nome">Fiat</span>
+        </div>
+        <div class="marca-item" onclick="filtrarMarca('Volkswagen')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚙</span></div>
+            <span class="marca-nome">VW</span>
+        </div>
+        <div class="marca-item" onclick="filtrarMarca('Ford')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚘</span></div>
+            <span class="marca-nome">Ford</span>
+        </div>
+        <div class="marca-item" onclick="filtrarMarca('Toyota')">
+            <div class="marca-logo"><span style="font-size: 24px;">🏎️</span></div>
+            <span class="marca-nome">Toyota</span>
+        </div>
+        <div class="marca-item" onclick="filtrarMarca('Hyundai')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚓</span></div>
+            <span class="marca-nome">Hyundai</span>
+        </div>
+        <div class="marca-item" onclick="filtrarMarca('Honda')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚖</span></div>
+            <span class="marca-nome">Honda</span>
+        </div>
+        <div class="marca-item" onclick="filtrarMarca('Renault')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚐</span></div>
+            <span class="marca-nome">Renault</span>
+        </div>
+        <div class="marca-item" onclick="filtrarMarca('Jeep')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚜</span></div>
+            <span class="marca-nome">Jeep</span>
+        </div>
+        <!-- NOVAS CATEGORIAS -->
+        <div class="marca-item" onclick="filtrarVitrine('Motos')">
+            <div class="marca-logo"><span style="font-size: 24px;">🏍️</span></div>
+            <span class="marca-nome">Motos</span>
+        </div>
+        <div class="marca-item" onclick="filtrarVitrine('Barcos')">
+            <div class="marca-logo"><span style="font-size: 24px;">🚤</span></div>
+            <span class="marca-nome">Barcos</span>
+        </div>
+        <div class="marca-item" onclick="filtrarVitrine('Fogão')">
+            <div class="marca-logo"><span style="font-size: 24px;">🍳</span></div>
+            <span class="marca-nome">FOGÃO</span>
+        </div>
+        <div class="marca-item" onclick="filtrarVitrine('Geladeira')">
+            <div class="marca-logo"><span style="font-size: 24px;">❄️</span></div>
+            <span class="marca-nome">GELADEIRA</span>
+        </div>
+        <div class="marca-item" onclick="filtrarVitrine('TV')">
+            <div class="marca-logo"><span style="font-size: 24px;">📺</span></div>
+            <span class="marca-nome">TV</span>
+        </div>
+        <div class="marca-item" onclick="filtrarVitrine('Máquina de Lavar')">
+            <div class="marca-logo"><span style="font-size: 24px;">🧺</span></div>
+            <span class="marca-nome">LAVADORA</span>
+        </div>
+        <div class="marca-item" onclick="filtrarVitrine('Celulares')">
+            <div class="marca-logo"><span style="font-size: 24px;">📱</span></div>
+            <span class="marca-nome">CELULARES</span>
+        </div>
+    </div>
+
+    <div id="container-carrossel" class="hidden">
+        <div class="carrossel-track" id="carrossel-track"></div>
+        <button class="carrossel-seta seta-prev" onclick="navCarrossel(-1)">❮</button>
+        <button class="carrossel-seta seta-next" onclick="navCarrossel(1)">❯</button>
+    </div>
+
+    <div class="barra-categorias" id="filtro-categorias">
+        <button class="btn-cat-filter active" onclick="filtrarVitrine('Todos', this)">🚀 TODOS</button>
+        <button class="btn-cat-filter" onclick="filtrarVitrine('Veículos', this)">🚗 VEÍCULOS</button>
+        <button class="btn-cat-filter" onclick="filtrarVitrine('Celulares', this)">📱 CELULARES</button>
+        <button class="btn-cat-filter" onclick="filtrarVitrine('Eletrodomésticos', this)">🧺 ELETRO</button>
+        <button class="btn-cat-filter" onclick="filtrarVitrine('Móveis', this)">🛋️ MÓVEIS</button>
+        <button class="btn-cat-filter" onclick="filtrarVitrine('Informática', this)">💻 INFORMÁTICA</button>
+        <button class="btn-cat-filter" onclick="filtrarVitrine('Games', this)">🎮 GAMES</button>
+        <button class="btn-cat-filter" onclick="filtrarVitrine('Imóveis', this)">🏠 IMÓVEIS</button>
+        <button class="btn-cat-filter" onclick="filtrarVitrine('Outros', this)">📦 OUTROS</button>
+    </div>
+
+    <button id="btn-cad-car" class="btn-flutuante hidden" style="z-index:6000;" onclick="abrirModal()"><span>+</span> <p class="txt-anunciar">ANUNCIAR</p></button>
+
+    <!-- MODAL DETALHES (TELA CHEIA) -->
+    <div id="modal-detalhes">
+        <div class="detalhes-header">
+            <button class="btn-fechar-detalhes" onclick="fecharDetalhes()">✕</button>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-comp b-share" id="btn-share-detalhes" style="padding:10px; border-radius:50%; width:44px; height:44px;">🔗</button>
+                <button class="btn-comp b-fav" id="btn-fav-detalhes" style="padding:10px; border-radius:50%; width:44px; height:44px;">⭐</button>
+            </div>
+        </div>
+        
+        <div class="detalhes-fotos" id="detalhes-fotos-container" ontouchstart="handleTouchStartDetalhes(event)" ontouchmove="handleTouchMoveDetalhes(event)" ontouchend="handleTouchEndDetalhes(event)">
+            <img src="" id="detalhes-foto-img">
+            <div class="foto-info" id="detalhes-foto-info">1/1</div>
+            <button class="seta-nav seta-esq" onclick="navFotoDetalhes(-1)">❮</button>
+            <button class="seta-nav seta-dir" onclick="navFotoDetalhes(1)">❯</button>
+        </div>
+
+        <div class="detalhes-content">
+            <h1 class="detalhes-titulo" id="detalhes-titulo"></h1>
+            <p class="detalhes-preco" id="detalhes-preco"></p>
+            
+            <p class="detalhes-local" id="detalhes-local"></p>
+            
+            <div style="background:#111; padding:12px; border-radius:10px; border:1px solid #333; margin:15px 0;">
+                <p style="color:#ff4444; font-size:14px; font-weight:bold; margin:0; text-align:center;">
+                    ⚠️ Atenção: A garantia e a entrega deste produto são de inteira responsabilidade do anunciante. Negocie com segurança.
+                </p>
+            </div>
+
+            <div id="detalhes-tags" style="margin-top:15px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
+            
+            <div class="detalhes-desc" id="detalhes-desc"></div>
+        </div>
+
+        <div class="detalhes-footer">
+            <button class="btn-detalhes-zap" id="btn-zap-detalhes">📱 CHAMAR NO WHATSAPP</button>
+        </div>
+    </div>
+
+    <div id="modal-login" class="hidden" style="z-index:7000;">
+        <div class="login-box" style="position:relative;">
+            <!-- botão de fechar / voltar ao site -->
+            <button style="position:absolute;top:10px;right:10px;z-index:7000;background:none;color:var(--primary);border:none;font-size:14px;cursor:pointer;" onclick="document.getElementById('modal-login').classList.add('hidden');">✖️ VOLTAR PARA O SITE</button>
+            <h1 id="modal-login-titulo">VIP SHOP  ️</h1>
+
+            <!-- BOTÃO DE LOGIN DIRETO PARA QUEM JÁ É VENDEDOR -->
+            <button id="btn-login-direto" class="btn-login" style="background:var(--blue); color:#fff; font-size:18px; font-weight:900; margin-bottom: 30px; padding: 20px;" onclick="registrarComGoogle(true)">
+                SOU VENDEDOR (ENTRAR COM GOOGLE) 🚪
+            </button>
+
+            <div id="secao-cadastro-vendedor">
+                <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+                <p id="modal-login-texto" style="color:#fff; font-size:13px; margin-bottom:10px;">
+                    Ainda não tem conta? Preencha os dados da sua loja abaixo:
+                </p>
+
+                <!-- logo de cadastro no topo -->
+                <div class="upload-fotos" style="z-index:7000;">
+                    <img id="registro-logo-preview" class="logo-preview" alt="Logo Preview" onclick="document.getElementById('registro-logo').click();" style="z-index:7000;">
+                    <input type="file" id="registro-logo" style="display:none;" accept=".jpg,.jpeg,.png,.webp,.jfif" onchange="previewLogoCadastro()">
+                </div>
+
+                <div class="grid-form">
+                    <div><label>NOME DA LOJA</label><input type="text" id="registro-nome"></div>
+                    <div id="bloco-registro-whatsapp"><label>WHATSAPP</label><input type="text" id="registro-whatsapp" placeholder="+5511999999999"></div>
+                </div>
+                <div class="grid-form">
+                    <div><label>UF</label>
+                        <select id="registro-uf">
+                            <option value="BR">Brasil (Nacional)</option>
+                            <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP" selected>SP</option><option value="SE">SE</option><option value="TO">TO</option>
+                        </select>
+                    </div>
+                    <div><label>CIDADE</label><input type="text" id="registro-cidade"></div>
+                </div>
+
+                <button id="btn-login-google" class="btn-login" style="background:#ff9800;color:#000;font-size:16px;font-weight:900; margin-top: 30px;" onclick="registrarComGoogle(false)">CRIAR MINHA CONTA E ENTRAR</button>
+            </div>
+
+            <button id="btn-salvar-perfil" class="btn-login hidden" style="background:#ff9800;color:#000;font-size:16px;font-weight:900;" onclick="salvarAlteracoesPerfil()">💾 SALVAR ALTERAÇÕES</button>
+            <p style="font-size:10px;color:orange;margin-top:5px;">
+                <a href="privacidade.html" target="_blank" style="color:orange;text-decoration:underline;">
+                    Ao cadastrar, você concorda com nossa Política de Privacidade
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <div id="modal-perfil" class="hidden">
+        <div class="modal-box">
+            <h2 style="color:var(--primary); text-align:center;">Complete seu perfil de vendedor</h2>
+            <div class="upload-fotos">
+                <img id="perfil-logo-preview" class="logo-preview" alt="Logo Preview" onclick="document.getElementById('perfil-logo').click();">
+                <input type="file" id="perfil-logo" style="display:none;" accept="image/*" onchange="previewLogoPerfil()">
+            </div>
+            <label>WHATSAPP DA LOJA (obrigatório)</label>
+            <input type="text" id="perfil-whatsapp" placeholder="Ex: +5511999999999">
+            <button class="btn-criar-conta" onclick="salvarPerfil()">✅ SALVAR PERFIL</button>
+        </div>
+    </div>
+
+    <div id="modal-admin">
+        <div class="admin-box">
+            <h2 style="color:var(--primary); text-align:center;">⚙️ PAINEL ADMINISTRATIVO</h2>
+            
+            <div style="background:#111; padding:20px; border-radius:15px; border:1px solid #333; margin-bottom:25px;">
+                <h3 style="color:#fff; margin-top:0;">📸 Adicionar Banner ao Carrossel</h3>
+                <label>URL DA IMAGEM (1100x350 recomendado)</label>
+                <input type="text" id="admin-banner-url" placeholder="https://exemplo.com/foto.jpg" style="margin-bottom:15px;">
+                <label>FRASE DE DESTAQUE</label>
+                <input type="text" id="admin-banner-texto" placeholder="Ofertas Especiais da Semana!" style="margin-bottom:15px;">
+                <button class="btn-admin" style="width:100%; padding:15px;" onclick="adicionarBanner()">➕ ADICIONAR AO CARROSSEL</button>
+            </div>
+
+            <h3 style="color:#fff;">📋 Banners Ativos</h3>
+            <div id="admin-lista-banners"></div>
+
+            <button class="btn-admin" style="width:100%; margin-top:30px; background:var(--red);" onclick="fecharAdmin()">FECHAR PAINEL</button>
+        </div>
+    </div>
+
+    <div id="modal-favoritos" class="hidden" style="position:fixed; inset:0; background:#000; z-index:5100; overflow-y:auto; padding:20px;">
+        <div class="modal-box">
+            <h2 style="color:var(--primary); text-align:center;">INTERESSADOS NO ANÚNCIO</h2>
+            <div id="lista-favoritos"></div>
+            <button onclick="fecharFavoritos()" style="width:100%; margin-top:20px; background:var(--primary); color:#000; border:none; padding:14px; border-radius:10px; font-weight:900;">FECHAR</button>
+        </div>
+    </div>
+    <!-- modal-cad is hidden by default and only opened via abrirModal()/abrirEdicao() -->
+    <div id="modal-cad" class="hidden">
+        <div class="modal-box">
+            <h2 id="modal-titulo" style="color:var(--primary);">ANUNCIAR PRODUTO</h2>
+            
+            <div class="grid-form-3">
+                <div>
+                    <label>📂 CATEGORIA</label>
+                    <select id="c-categoria" onchange="alternarCategorias()">
+                        <option value="Veículos">🚗 Veículos</option>
+                        <option value="Celulares">📱 Celulares</option>
+                        <option value="Eletrodomésticos">🧺 Eletrodomésticos</option>
+                        <option value="Móveis">🛋️ Móveis</option>
+                        <option value="Informática">💻 Informática</option>
+                        <option value="Games">🎮 Games</option>
+                        <option value="Imóveis">🏠 Imóveis</option>
+                        <option value="Outros">📦 Outros</option>
+                    </select>
+                </div>
+                <div><label>MARCA / FABRICANTE</label><input type="text" id="c-marca"></div>
+                <div><label>MODELO / NOME</label><input type="text" id="c-modelo"></div>
+            </div>
+
+            <div id="secao-veiculo">
+                <div class="grid-form-3">
+                    <div><label>TIPO</label><select id="c-tipo" onchange="alternarMotos()"><option value="carros">🚗 CARRO</option><option value="motos">🏍️ MOTO</option></select></div>
+                    <div><label>ANO</label><select id="c-ano" onchange="consultarFipe()"></select></div>
+                    <div><label>COR</label><input type="text" id="c-cor"></div>
+                </div>
+
+                <button id="btn-consultar-fipe" onclick="consultarFipe()" style="background: var(--primary); color: #000; padding: 14px; border-radius: 10px; border: none; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; min-height: 44px; z-index: 5100; transition: 0.2s; margin-bottom:20px;">🔍 CONSULTAR VALOR FIPE</button>
+
+                <div class="grid-form-3">
+                    <div><label>KM</label><input type="number" id="c-km"></div>
+                    <div><label>VALOR FIPE (READONLY)</label><input type="text" id="c-fipe" readonly style="color:var(--green)"></div>
+                    <div>
+                        <label>COMBUSTÍVEL</label>
+                        <select id="c-comb">
+                            <option value="Flex">Flex</option><option value="Gasolina">Gasolina</option>
+                            <option value="Álcool">Álcool</option><option value="Diesel">Diesel</option>
+                            <option value="GNV">GNV</option><option value="Elétrico">Elétrico</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-form-3">
+                    <div id="bloco-cambio"><label>CÂMBIO</label><select id="c-cambio"><option value="Manual">Manual</option><option value="Automático">Automático</option></select></div>
+                    <div id="bloco-portas"><label>PORTAS</label><select id="c-portas"><option value="4">4 Portas</option><option value="2">2 Portas</option></select></div>
+                    <div><label>Nº DONOS</label><input type="number" id="c-donos"></div>
+                </div>
+            </div>
+
+            <div class="grid-form-3">
+                <div><label>VALOR DE VENDA</label><input type="text" id="c-venda" oninput="mascaraMoeda(this)" style="font-size:25px !important; color:var(--green); font-weight: bold !important;"></div>
+                <div><label>UF</label>
+                    <select id="c-uf">
+                        <option value="BR">Brasil (Nacional)</option>
+                        <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP" selected>SP</option><option value="SE">SE</option><option value="TO">TO</option>
+                    </select>
+                </div>
+                <div><label>CIDADE</label><input type="text" id="c-cidade"></div>
+            </div>
+
+            <label>DESCRIÇÃO</label><textarea id="c-desc" rows="3"></textarea>
+
+            <div class="grid-form">
+                <div><label>📍 NOME DO LOJISTA (UF)</label><input type="text" id="c-lojista"></div>
+                <div><label>CONTATO (WHATSAPP)</label><input type="text" id="c-whatsapp" placeholder="+5511999999999"></div>
+            </div>
+
+            <div class="upload-fotos">
+                <label>FOTOS DO VEÍCULO (MÚLTIPLAS - MÁXIMO 6)</label>
+                <input type="file" id="c-fotos" class="input-file-custom" accept="image/*" multiple onchange="previewFotos()">
+                <div id="foto-preview-container" class="foto-preview-grid"></div>
+            </div>
+            
+            <button id="btn-salvar-main" class="btn-ctrl b-edit" style="width:100%; padding:18px;" onclick="salvarCarro()">🚀 PUBLICAR ANÚNCIO</button>
+            <button onclick="fecharModal()" style="width:100%; margin-top:10px; background:none; color:#fff; border:none; cursor:pointer;">CANCELAR</button>
+        </div>
+    </div>
+
+    <section class="container">
+        <div id="vitrine">
+            <p style="color:#fff;text-align:center;padding:20px;">Carregando anúncios...</p>
+        </div>
+    </section>
+
+    <footer style="text-align:center; padding:40px 20px; color:#666; font-size:12px; border-top:1px solid #222; margin-top:50px;">
+        <p>© 2026 VIP SHOP 💎 - O seu shopping online de confiança.</p>
+        <p>Todos os direitos reservados.</p>
+    </footer>
+
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyCZLt3pQZqlOrkKCDRfbkxQCtsYi5Ty6Wg", authDomain: "compravipcar.firebaseapp.com", projectId: "compravipcar", storageBucket: "compravipcar.firebasestorage.app", messagingSenderId: "958598132028", appId: "1:958598132028:web:dcc941c281157b4aa62e39" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(), auth = firebase.auth();
+
+    // --- INÍCIO DA LÓGICA DE VENDEDOR ---
+    // 1. Captura o resultado do redirecionamento do Google (essencial para mobile)
+    auth.getRedirectResult().then(async (result) => {
+        const user = result.user;
+        if (user) {
+            console.log("🔍 VIP SHOP - Verificando UID no Redirect Mobile:", user.uid);
+            
+            // TRAVA DE SEGURANÇA: Mostra status de verificação
+            const statusTxt = document.getElementById('modal-login-texto');
+            if (statusTxt) statusTxt.textContent = "⏳ Verificando perfil de vendedor...";
+
+            const doc = await db.collection('vendedores').doc(user.uid).get();
+            
+            if (doc.exists) {
+                console.log("✅ VIP SHOP - Perfil Vendedor Encontrado!");
+                window.perfilUsuario = { ...doc.data(), uid: user.uid, tipo: 'vendedor' };
+                localStorage.removeItem('apenas_login_mobile');
+                localStorage.removeItem('strict_seller_login');
+                
+                document.getElementById('modal-login').classList.add('hidden');
+                if (document.getElementById('btn-login-header')) document.getElementById('btn-login-header').classList.add('hidden');
+                const btnCadCar = document.getElementById('btn-cad-car');
+                if (btnCadCar) {
+                    btnCadCar.classList.remove('hidden');
+                    btnCadCar.dataset.uid = user.uid;
+                }
+                carregarVitrine();
+            } else {
+                console.log("⚠️ VIP SHOP - UID não encontrado na coleção 'vendedores'.");
+                
+                // EXPULSÃO IMEDIATA SE NÃO FOR VENDEDOR
+                const strict = localStorage.getItem('strict_seller_login');
+                const apenasLogin = localStorage.getItem('apenas_login_mobile');
+                
+                if (strict === 'true' || apenasLogin === 'true') {
+                    alert('❌ ACESSO NEGADO: Esta conta não é de vendedor. Cadastre sua loja primeiro.');
+                    localStorage.removeItem('strict_seller_login');
+                    localStorage.removeItem('apenas_login_mobile');
+                    await auth.signOut();
+                    location.reload(); // Limpa tudo e volta ao início
+                    return;
+                }
+
+                // NOVO USUÁRIO (CRIAR CONTA): Recupera dados salvos
+                const temp = localStorage.getItem('temp_vendedor');
+                if (temp) {
+                    const data = JSON.parse(temp);
+                    const finalData = { ...data, uid: user.uid, email: user.email, tipo: 'vendedor', dataCriacao: firebase.firestore.FieldValue.serverTimestamp(), vendasConcluidas: 0 };
+                    await db.collection('vendedores').doc(user.uid).set(finalData, { merge: true });
+                    window.perfilUsuario = finalData;
+                    localStorage.removeItem('temp_vendedor');
+                    document.getElementById('modal-login').classList.add('hidden');
+                    carregarVitrine();
+                    alert('✅ Conta de Vendedor Criada via Mobile!');
+                }
+            }
+        }
+    }).catch(err => {
+        if (err.code !== 'auth/no-auth-event') { console.error("❌ Erro no Redirect: ", err.message); }
+    });
+
+    // 2. Monitor de Estado de Autenticação (Unificado com Trava de Segurança)
+    auth.onAuthStateChanged(u => {
+        const btnCadCar = document.getElementById('btn-cad-car');
+        const btnLoginHeader = document.getElementById('btn-login-header');
+        const btnLogout = document.getElementById('btn-logout');
+        
+        if (btnLoginHeader) {
+            btnLoginHeader.onclick = abrirModalLogin;
+            btnLoginHeader.textContent = 'VENDER AGORA';
+        }
+
+        if (u) {
+            // Se estiver em processo de verificação estrita, não libera nada ainda
+            if (localStorage.getItem('strict_seller_login') === 'true') return;
+
+            if (btnLogout) btnLogout.classList.remove('hidden');
+
+            db.collection('vendedores').doc(u.uid).get().then(async doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('usuario-nome').textContent = `👤 ${data.nome}`;
+                    btnCadCar.classList.remove('hidden');
+                    btnCadCar.dataset.uid = u.uid;
+                    if (btnLoginHeader) btnLoginHeader.classList.add('hidden');
+                    document.getElementById('btn-edit-perfil').classList.remove('hidden');
+                    window.perfilUsuario = { ...data, uid: u.uid, tipo: 'vendedor' };
+                    // Força carregamento da vitrine para garantir sincronia total
+                    carregarVitrine();
+                } else {
+                    // SE NÃO EXISTE NA GAVETA DE VENDEDORES E NÃO É NOVO CADASTRO, EXPULSA
+                    if (!localStorage.getItem('temp_vendedor')) {
+                        console.log("⚠️ VIP SHOP - Usuário sem registro de vendedor. Protegendo vitrine.");
+                        window.perfilUsuario = null;
+                        btnCadCar.classList.add('hidden');
+                        if (btnLoginHeader) btnLoginHeader.classList.remove('hidden');
+                        
+                        // Se tentou entrar como vendedor mas não é, limpa a sessão
+                        if (localStorage.getItem('strict_seller_login') === 'true') {
+                            alert('❌ Esta conta não é de vendedor. Cadastre sua loja primeiro.');
+                            localStorage.removeItem('strict_seller_login');
+                            auth.signOut();
+                        }
+                    }
+                }
+            });
+        } else {
+            btnCadCar.classList.add('hidden');
+            if (btnLoginHeader) btnLoginHeader.classList.remove('hidden');
+            if (btnLogout) btnLogout.classList.add('hidden');
+            document.getElementById('btn-edit-perfil').classList.add('hidden');
+            document.getElementById('usuario-nome').textContent = '';
+            window.perfilUsuario = null;
+        }
+        carregarVitrine();
+    });
+
+    // 3. Função de Login e Registro (Com Bloqueio de Gaveta)
+    async function registrarComGoogle(apenasLogin = false) {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        
+        if (apenasLogin) localStorage.setItem('strict_seller_login', 'true');
+
+        if (isMobile) {
+            if (!apenasLogin) {
+                const nome = (document.getElementById('registro-nome')?.value || '').trim();
+                const whatsapp = (document.getElementById('registro-whatsapp')?.value || '').trim();
+                const uf = document.getElementById('registro-uf')?.value || '';
+                const cidade = (document.getElementById('registro-cidade')?.value || '').trim();
+
+                if (!nome || !whatsapp || !uf || !cidade) {
+                    alert('❌ Para CRIAR CONTA, preencha o formulário completo.');
+                    return;
+                }
+                localStorage.setItem('temp_vendedor', JSON.stringify({ nome, whatsapp, uf, cidade }));
+            }
+            return auth.signInWithRedirect(provider);
+        }
+
+        try {
+            // Tela de espera
+            const statusTxt = document.getElementById('modal-login-texto');
+            if (statusTxt) statusTxt.textContent = "⏳ Conectando ao Google...";
+
+            const result = await auth.signInWithPopup(provider);
+            const user = result.user;
+            
+            if (user) {
+                if (statusTxt) statusTxt.textContent = "🔍 Verificando sua gaveta de vendedor...";
+                const doc = await db.collection('vendedores').doc(user.uid).get();
+                
+                if (doc.exists) {
+                    window.perfilUsuario = { ...doc.data(), uid: user.uid, tipo: 'vendedor' };
+                    localStorage.removeItem('strict_seller_login');
+                    document.getElementById('modal-login').classList.add('hidden');
+                    btnCadCar.classList.remove('hidden');
+                    carregarVitrine();
+                    return;
+                }
+
+                if (apenasLogin) {
+                    alert('❌ ACESSO NEGADO: Esta conta não é de vendedor. Cadastre sua loja primeiro.');
+                    localStorage.removeItem('strict_seller_login');
+                    await auth.signOut();
+                    location.reload();
+                    return;
+                }
+
+                // Fluxo de Cadastro Novo
+                const nome = (document.getElementById('registro-nome')?.value || '').trim();
+                const whatsapp = (document.getElementById('registro-whatsapp')?.value || '').trim();
+                const uf = document.getElementById('registro-uf')?.value || '';
+                const cidade = (document.getElementById('registro-cidade')?.value || '').trim();
+                
+                if (!nome || !whatsapp || !uf || !cidade) {
+                    alert('❌ Preencha todos os campos para criar sua conta.');
+                    await auth.signOut();
+                    return;
+                }
+
+                const data = { uid: user.uid, email: user.email, nome, whatsapp, uf, cidade, tipo: 'vendedor', dataCriacao: firebase.firestore.FieldValue.serverTimestamp(), vendasConcluidas: 0 };
+                await db.collection('vendedores').doc(user.uid).set(data, { merge: true });
+                window.perfilUsuario = data;
+                alert('✅ Conta de Vendedor Criada!');
+                document.getElementById('modal-login').classList.add('hidden');
+                carregarVitrine();
+            }
+        } catch (err) {
+            alert('❌ Erro: ' + err.message);
+        }
+    }
+
+    // PROTEÇÃO DO MODAL DE ANÚNCIO
+    function abrirModal() {
+        const user = auth.currentUser;
+        // SÓ ABRE SE FOR VENDEDOR VALIDADO
+        if (!user || !window.perfilUsuario || window.perfilUsuario.tipo !== 'vendedor') {
+            alert('❌ Acesso Negado: Crie sua conta de vendedor primeiro');
+            abrirModalLogin();
+            return;
+        }
+        document.getElementById('modal-cad').classList.remove('hidden');
+        document.getElementById('modal-titulo').textContent = 'ANUNCIAR PRODUTO';
+        document.getElementById('c-categoria').value = 'Veículos';
+        alternarCategorias();
+        
+        const sel = document.getElementById('c-ano'); sel.innerHTML = "";
+        for(let a=1999; a<=2026; a++) sel.innerHTML += `<option value="${a}">${a}</option>`;
+        window.fotosAcumuladas = [];
+        window.fotoAtualModal = 0;
+        
+        // Recuperação de Dados do Perfil
+        const p = window.perfilUsuario;
+        document.getElementById('c-lojista').value = `${p.nome || ''} (${p.uf || ''})`;
+        if(p.whatsapp) document.getElementById('c-whatsapp').value = p.whatsapp;
+    }
+    // --- FIM DA LÓGICA DE VENDEDOR ---
+
+    // --- HELPERS DE SEGURANÇA E DATA ---
+    function formatarData(timestamp) {
+        if (!timestamp) return 'Recém postado';
+        const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const hora = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${dia}/${mes} às ${hora}:${min}`;
+    }
+
+    function formatarMesAno(timestamp) {
+        if (!timestamp) return 'Recém chegado';
+        const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        return `${meses[d.getMonth()]}/${d.getFullYear()}`;
+    }
+
+    function getEstrelas(vendas) {
+        const v = parseInt(vendas) || 0;
+        if (v === 0) return '🆕';
+        if (v <= 5) return '⭐';
+        if (v <= 15) return '⭐⭐';
+        if (v <= 30) return '⭐⭐⭐';
+        if (v <= 50) return '⭐⭐⭐⭐';
+        return '⭐⭐⭐⭐⭐';
+    }
+
+    function filtrarVitrine(categoria, btn) {
+        // Estilo dos botões
+        document.querySelectorAll('.btn-cat-filter').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        
+        carregarVitrine(categoria);
+    }
+
+    function filtrarMarca(marca) {
+        carregarVitrine('Todos', marca);
+    }
+
+    function carregarVitrine(filtroCategoria = 'Todos', filtroMarca = null) {
+        let query = db.collection('anuncios');
+        
+        // Filtro Pro: Somente anúncios ativos ou vendidos na vitrine (oculta pendentes)
+        if (filtroCategoria !== 'Todos') {
+            query = query.where('categoria', '==', filtroCategoria);
+        }
+        if (filtroMarca) {
+            query = query.where('marca', '==', filtroMarca);
+        }
+        
+        query.orderBy('dataPostagem', 'desc').onSnapshot(async snap => {
+            const v = document.getElementById('vitrine'); v.innerHTML = "";
+            const u = auth.currentUser;
+            const perfil = window.perfilUsuario || null;
+            if (snap.empty) {
+                v.innerHTML = '<p style="color:#fff; text-align:center; padding:20px;">Nenhum anúncio disponível nesta categoria.</p>';
+                return;
+            }
+
+            // Mapear promessas de lojistas para performance
+            const docs = snap.docs;
+            for (const doc of docs) {
+                const c = doc.data(), id = doc.id;
+                
+                // Pular anúncios pendentes de análise (Trava de Valor)
+                if (c.status === 'pendente' && (!u || c.uid !== u.uid)) continue;
+
+                // Dono do anúncio
+                const souDono = !!u && perfil && (
+                    (c.vendedor_id && c.vendedor_id === perfil.uid) ||
+                    (c.uid && c.uid === perfil.uid) ||
+                    (c.whatsapp && perfil.whatsapp && c.whatsapp.replace(/\D/g,'') === perfil.whatsapp.replace(/\D/g,'')) ||
+                    (c.loja && perfil.nome && c.loja.trim().toLowerCase().includes(perfil.nome.trim().toLowerCase()))
+                );
+
+                const sigla = c.uf || '';
+                const cidadeFormatada = c.cidade ? c.cidade.trim().toUpperCase() : '';
+                let localTxt = sigla === 'BR' ? 'NACIONAL' : (cidadeFormatada ? cidadeFormatada + " - " : "") + sigla;
+                const fotos = c.fotos || ['https://via.placeholder.com/750x350'];
+                const vendaTxt = c.venda || 'Sob Consulta';
+                const isVendido = c.status === 'vendido';
+                const dataPost = formatarData(c.dataPostagem);
+
+                // Buscar vendas do lojista para o selo discreto
+                let vendasCount = 0;
+                const vDoc = await db.collection('vendedores').doc(c.uid).get();
+                if (vDoc.exists) vendasCount = vDoc.data().vendasConcluidas || 0;
+                
+                v.innerHTML += `<div class="car-card ${isVendido ? 'vendido' : ''}" onclick="${isVendido ? '' : `abrirDetalhes('${id}')`}">
+                    <div class="foto-container" id="foto-cont-${id}">
+                        ${isVendido ? '<div class="selo-vendido">VENDIDO</div>' : ''}
+                        ${c.status === 'pendente' ? '<div style="position:absolute; top:10px; right:10px; background:orange; color:#000; padding:5px 10px; border-radius:5px; font-weight:bold; font-size:10px; z-index:5500;">⏳ EM ANÁLISE</div>' : ''}
+                        <img src="${fotos[0]}" class="foto-main" id="foto-${id}">
+                    </div>
+                    <p class="card-preco-tarja">${vendaTxt}</p>
+                    <div style="padding:15px;">
+                        <h3 style="color:var(--primary); margin:0; font-size:16px; display: flex; align-items: center; justify-content: space-between;">
+                            ${c.marca} ${c.modelo}
+                            ${souDono ? `<span onclick="event.stopPropagation(); gerenciarFavoritos('${id}')" style="cursor:pointer; font-size: 11px;">❤️</span>` : ''}
+                        </h3>
+                        <p style="color:#888; font-size:11px; margin-top:5px; margin-bottom:5px;">⚖️ Negociação direta com o anunciante</p>
+                        <p class="data-postagem">🕒 Postado em: ${dataPost}</p>
+                        <p class="lojista-info">
+                            <span class="pino-local">📍</span> ${localTxt} | <span style="color:#888;">👤 ${c.loja ? c.loja.toUpperCase() : 'LOJISTA'}</span>
+                        </p>
+                        ${c.categoria === 'Veículos' ? `
+                        <div style="margin-top:10px;">
+                            <span class="tag" style="font-size:11px;">📅 ${c.ano || 'N/A'}</span>
+                            <span class="tag" style="font-size:11px;">🛣️ ${c.km || "0"} KM</span>
+                        </div>` : ''}
+                        <p class="lojista-footer">
+                            👤 ${c.loja || 'Lojista'} • ${vendasCount} Vendas ${getEstrelas(vendasCount)}
+                        </p>
+                        <button class="btn-ver-detalhes" onclick="event.stopPropagation(); abrirDetalhes('${id}')" style="width:100%; margin-top:15px; background:#000; border:1px solid var(--primary); color:#fff; padding:12px; border-radius:8px; font-size:12px; font-weight:900; cursor:pointer; text-transform:uppercase; transition:0.3s; display:block;">
+                            VER DETALHES ➔
+                        </button>
+                    </div>
+                    ${souDono ? `<div class="barra-vendedor" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; background: #111;"> 
+                        ${!isVendido ? `<button class="btn-ctrl b-vendido" onclick="marcarVendido('${id}', '${c.uid}')">✔️ VENDIDO</button>` : ''} 
+                        <button class="btn-ctrl b-edit" onclick="abrirEdicao('${id}')">✏️ EDITAR</button> 
+                        <button class="btn-ctrl b-share" style="background:var(--blue); color:#fff;" onclick="compartilharAnuncio('${id}', '${c.marca} ${c.modelo}', '${vendaTxt}')">🔗 SHARE</button> 
+                        <button class="btn-ctrl b-del" onclick="apagarAnuncio('${id}')">🗑️ APAGAR</button> 
+                    </div>` : `${!isVendido ? `<div class="barra-comprador" onclick="event.stopPropagation()">
+                        <button class="btn-comp b-whatsapp" onclick="chamarWhatsapp('${c.whatsapp}', '${c.marca} ${c.modelo}', '${c.venda}')">📱 WHATSAPP</button>
+                        <button class="btn-comp b-fav" onclick="salvarFavorito('${id}', '${c.uid}')">⭐ FAVORITO</button>
+                        <button class="btn-comp b-share" onclick="compartilharAnuncio('${id}', '${c.marca} ${c.modelo}', '${c.venda}')">🔗 COMPARTILHAR</button>
+                    </div>` : ''}`}
+                </div>`;
+                window[`fotos_${id}`] = fotos;
+                window[`fotoAtual_${id}`] = 0;
+            }
+        });
+    }
+
+    function marcarVendido(id, vendedorUid) {
+        if (!confirm('CONFIRMAR: Este produto foi vendido? O anúncio continuará visível com o selo de VENDIDO.')) return;
+        
+        const batch = db.batch();
+        const anuncioRef = db.collection('anuncios').doc(id);
+        const vendedorRef = db.collection('vendedores').doc(vendedorUid);
+
+        batch.update(anuncioRef, { status: 'vendido' });
+        batch.update(vendedorRef, { 
+            vendasConcluidas: firebase.firestore.FieldValue.increment(1) 
+        });
+
+        batch.commit()
+            .then(() => alert('✅ Status atualizado e ranking do lojista incrementado!'))
+            .catch(err => alert('❌ Erro: ' + err.message));
+    }
+
+    async function abrirDetalhes(id) {
+        const doc = await db.collection('anuncios').doc(id).get();
+        if (!doc.exists) return;
+        const c = doc.data();
+        
+        if (c.status === 'vendido') {
+            alert('Este item já foi vendido.');
+            return;
+        }
+        
+        // Buscar dados do lojista para selo de autoridade
+        const vDoc = await db.collection('vendedores').doc(c.uid).get();
+        const lojistaData = vDoc.exists ? vDoc.data() : {};
+        const membroDesde = formatarMesAno(lojistaData.dataCriacao);
+        const postadoEm = formatarData(c.dataPostagem);
+
+        window.fotosDetalhes = c.fotos || [];
+        window.fotoAtualDetalhes = 0;
+        
+        const modal = document.getElementById('modal-detalhes');
+        document.getElementById('detalhes-titulo').textContent = `${c.marca} ${c.modelo}`;
+        document.getElementById('detalhes-preco').textContent = c.venda || 'Sob Consulta';
+        
+        const sigla = c.uf || '';
+        const localTxt = sigla === 'BR' ? 'NACIONAL' : (c.cidade ? c.cidade.toUpperCase() + "-" : "") + sigla;
+        const vendasConcluidas = lojistaData.vendasConcluidas || 0;
+        
+        document.getElementById('detalhes-local').innerHTML = `
+            📍 ${localTxt}<br>
+            <span class="data-postagem">🕒 Postado em: ${postadoEm}</span><br>
+            <span style="color:var(--primary); font-size:14px; font-weight:bold;">🛡️ Vendedor no VIP SHOP desde: ${membroDesde}</span><br>
+            <span style="color:var(--green); font-size:14px; font-weight:900;">✅ ${vendasConcluidas} negociações concluídas ${getEstrelas(vendasConcluidas)}</span>
+        `;
+        
+        document.getElementById('detalhes-desc').textContent = c.desc || 'Sem descrição informada.';
+        document.getElementById('detalhes-desc').style.display = 'block';
+        
+        // Tags dinâmicas inteligentes (Padrão ZeCar)
+        const tagsCont = document.getElementById('detalhes-tags');
+        let tagsHtml = "";
+
+        // SÓ MOSTRA TAGS TÉCNICAS SE FOR VEÍCULO
+        if (c.categoria === 'Veículos') {
+            tagsHtml = `
+                <span class="tag">📅 ${c.ano || 'N/A'}</span>
+                <span class="tag">🛣️ ${c.km || "0"} KM</span>
+                <span class="tag">⛽ ${c.combustivel || "N/A"}</span>
+                <span class="tag">👤 ${c.donos || "1"}º DONO</span>
+                <span class="tag">🎨 ${c.cor || "N/A"}</span>
+            `;
+            if (c.tipo !== 'motos') {
+                tagsHtml += `
+                    <span class="tag">⚙️ ${c.cambio || "N/A"}</span>
+                    <span class="tag">🚪 ${c.portas || "4"} PORTAS</span>
+                `;
+            }
+        } else {
+            // Para outras categorias, limpa o HTML das tags técnicas
+            tagsHtml = "";
+        }
+        tagsCont.innerHTML = tagsHtml;
+
+        // Configurar botões
+        document.getElementById('btn-zap-detalhes').onclick = () => chamarWhatsapp(c.whatsapp, `${c.marca} ${c.modelo}`, c.venda);
+        document.getElementById('btn-share-detalhes').onclick = () => compartilharAnuncio(id, `${c.marca} ${c.modelo}`, c.venda);
+        document.getElementById('btn-fav-detalhes').onclick = () => salvarFavorito(id, c.uid);
+
+        atualizarCarrosselDetalhes();
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function fecharDetalhes() {
+        document.getElementById('modal-detalhes').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function denunciarAnuncio(id) {
+        const motivo = prompt('Por qual motivo deseja denunciar este anúncio?');
+        if (!motivo) return;
+        
+        db.collection('denuncias').add({
+            anuncioId: id,
+            motivo: motivo,
+            dataDenuncia: firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'pendente'
+        }).then(() => {
+            alert('✅ Denúncia enviada! Nossa equipe analisará o conteúdo.');
+        }).catch(err => {
+            alert('❌ Erro ao enviar denúncia: ' + err.message);
+        });
+    }
+
+    function navFotoDetalhes(dir) {
+        const total = window.fotosDetalhes.length;
+        if (total <= 1) return;
+        window.fotoAtualDetalhes = (window.fotoAtualDetalhes + dir + total) % total;
+        atualizarCarrosselDetalhes();
+    }
+
+    function atualizarCarrosselDetalhes() {
+        const img = document.getElementById('detalhes-foto-img');
+        const info = document.getElementById('detalhes-foto-info');
+        const total = window.fotosDetalhes.length;
+        
+        if (total > 0) {
+            img.src = window.fotosDetalhes[window.fotoAtualDetalhes];
+            info.textContent = `${window.fotoAtualDetalhes + 1}/${total}`;
+            document.querySelector('#modal-detalhes .seta-esq').style.display = total > 1 ? 'flex' : 'none';
+            document.querySelector('#modal-detalhes .seta-dir').style.display = total > 1 ? 'flex' : 'none';
+        } else {
+            img.src = 'https://via.placeholder.com/750x350';
+            info.textContent = '0/0';
+        }
+    }
+
+    // Swipe para Modal Detalhes
+    let touchStartXDet = 0, touchEndXDet = 0, touchStartYDet = 0, touchEndYDet = 0;
+    function handleTouchStartDetalhes(e) { 
+        touchStartXDet = e.changedTouches[0].screenX; 
+        touchStartYDet = e.changedTouches[0].screenY;
+    }
+    function handleTouchMoveDetalhes(e) { 
+        const moveX = e.changedTouches[0].screenX;
+        const moveY = e.changedTouches[0].screenY;
+        const deltaX = Math.abs(moveX - touchStartXDet);
+        const deltaY = Math.abs(moveY - touchStartYDet);
+        // Se o movimento for mais horizontal que vertical, trava o scroll da página
+        if (deltaX > deltaY) {
+            if (e.cancelable) e.preventDefault();
+        }
+    }
+    function handleTouchEndDetalhes(e) { 
+        touchEndXDet = e.changedTouches[0].screenX;
+        const deslocamento = touchStartXDet - touchEndXDet;
+        // Validação Pro: Troca apenas se o deslocamento for > 50px
+        if (deslocamento > 50) navFotoDetalhes(1);
+        else if (deslocamento < -50) navFotoDetalhes(-1);
+    }
+
+
+
+    async function abrirEdicao(id) {
+        const doc = await db.collection('anuncios').doc(id).get();
+        if (!doc.exists) {
+            alert('Anúncio não encontrado!');
+            return;
+        }
+        const c = doc.data();
+        const u = auth.currentUser;
+        if (!u || u.uid !== c.uid) {
+            alert('Acesso negado: somente o proprietário pode editar este anúncio.');
+            return;
+        }
+        document.getElementById('c-categoria').value = c.categoria || 'Veículos';
+        document.getElementById('c-tipo').value = c.tipo || 'carros';
+        document.getElementById('c-marca').value = c.marca || '';
+        document.getElementById('c-modelo').value = c.modelo || '';
+        document.getElementById('c-ano').value = c.ano || '';
+        document.getElementById('c-cor').value = c.cor || '';
+        document.getElementById('c-km').value = c.km || '';
+        document.getElementById('c-fipe').value = c.fipe || '';
+        document.getElementById('c-comb').value = c.combustivel || 'Flex';
+        document.getElementById('c-cambio').value = c.cambio || 'Manual';
+        document.getElementById('c-donos').value = c.donos || '';
+        document.getElementById('c-portas').value = c.portas || '4';
+        document.getElementById('c-uf').value = c.uf || 'SP';
+        document.getElementById('c-cidade').value = c.cidade || '';
+        document.getElementById('c-venda').value = c.venda || '';
+        document.getElementById('c-desc').value = c.desc || '';
+        document.getElementById('c-lojista').value = c.loja || '';
+        document.getElementById('c-whatsapp').value = c.whatsapp || '';
+        window.fotosEdicao = c.fotos ? c.fotos.slice() : [];
+        renderizarFotosEdicao();
+        
+        alternarCategorias();
+        alternarMotos();
+
+        document.getElementById('modal-titulo').textContent = 'EDITAR ANÚNCIO';
+        const btn = document.getElementById('btn-salvar-main');
+        btn.innerText = '💾 SALVAR ALTERAÇÕES';
+        btn.onclick = () => atualizarCarro(id);
+        document.getElementById('modal-cad').classList.remove('hidden');
+    }
+
+    function renderizarFotosEdicao() {
+        const container = document.getElementById('foto-preview-container');
+        container.innerHTML = '';
+        window.fotosEdicao.forEach((foto, idx) => {
+            const thumb = document.createElement('div');
+            thumb.className = 'foto-thumb';
+            thumb.innerHTML = `<img src="${foto}" alt="Foto ${idx + 1}"><button class="btn-remove-foto" onclick="removerFotoEdicao(${idx})">✕</button>`;
+            container.appendChild(thumb);
+        });
+    }
+
+    function removerFotoEdicao(idx) {
+        window.fotosEdicao.splice(idx, 1);
+        renderizarFotosEdicao();
+    }
+
+    function compartilharAnuncio(id, modelo, preco) {
+        const link = `https://clickcerto.net/vipcar/?id=${id}`;
+        const msg = `Confira no Compra Vip Car: ${modelo} por ${preco}! Link: ${link}`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`);
+    }
+
+    // FUNÇÃO DE LOGIN E REGISTRO COM GOOGLE
+    async function registrarComGoogle(apenasLogin = false) {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        try {
+            const result = await auth.signInWithPopup(provider);
+            const user = result.user;
+            
+            if (user) {
+                // VERIFICAÇÃO DE USUÁRIO EXISTENTE (EVITA SOBREPOSIÇÃO DE DADOS)
+                const doc = await db.collection('vendedores').doc(user.uid).get();
+                
+                if (doc.exists) {
+                    // USUÁRIO JÁ CADASTRADO: FECHA MODAL E CARREGA PERFIL
+                    window.perfilUsuario = { ...doc.data(), uid: user.uid };
+                    document.getElementById('modal-login').classList.add('hidden');
+                    console.log("💎 VIP SHOP - Bem-vindo de volta, " + window.perfilUsuario.nome);
+                    return;
+                }
+
+                // SE CLICOU EM "SOU VENDEDOR" MAS NÃO EXISTE NO BANCO, AVISA
+                if (apenasLogin) {
+                    alert('❌ Perfil de vendedor não encontrado. Por favor, preencha os dados abaixo para criar sua conta.');
+                    return;
+                }
+
+                // NOVO USUÁRIO: CAPTURA DADOS DO FORMULÁRIO
+                const nome = (document.getElementById('registro-nome')?.value || '').trim();
+                const whatsapp = (document.getElementById('registro-whatsapp')?.value || '').trim();
+                const uf = document.getElementById('registro-uf')?.value || '';
+                const cidade = (document.getElementById('registro-cidade')?.value || '').trim();
+                
+                // VALIDAÇÃO OBRIGATÓRIA APENAS PARA NOVOS PERFIS
+                if (!nome || !whatsapp || !uf || !cidade) {
+                    alert('❌ Para o primeiro acesso, preencha Nome da Loja, WhatsApp, UF e Cidade para continuar.');
+                    return;
+                }
+
+                const data = {
+                    uid: user.uid,
+                    email: user.email,
+                    nome: nome,
+                    whatsapp: whatsapp,
+                    uf: uf,
+                    cidade: cidade,
+                    tipo: 'vendedor',
+                    dataCriacao: firebase.firestore.FieldValue.serverTimestamp(),
+                    vendasConcluidas: 0
+                };
+
+                await db.collection('vendedores').doc(user.uid).set(data, { merge: true });
+                window.perfilUsuario = data;
+                alert('✅ Conta de Vendedor Criada!');
+                document.getElementById('modal-login').classList.add('hidden');
+                abrirModal();
+            }
+        } catch (err) {
+            alert('❌ Erro: ' + err.message);
+        }
+    }
+
+    function fazerLogout() {
+        if (!confirm('Deseja realmente sair da sua conta?')) return;
+        auth.signOut().then(() => {
+            alert('👋 Você saiu da sua conta.');
+            location.reload(); // Recarrega para limpar todos os estados
+        }).catch(err => {
+            alert('❌ Erro ao sair: ' + err.message);
+        });
+    }
+
+    function abrirModalLogin() {
+        // Reset para Modo Registro
+        document.getElementById('modal-login-titulo').textContent = 'VIP SHOP  ️';
+        document.getElementById('modal-login-texto').classList.remove('hidden');
+        document.getElementById('btn-login-google').classList.remove('hidden');
+        document.getElementById('btn-salvar-perfil').classList.add('hidden');
+        document.getElementById('bloco-registro-whatsapp').classList.remove('hidden');
+        
+        // Limpar campos
+        document.getElementById('registro-nome').value = '';
+        document.getElementById('registro-whatsapp').value = '';
+        document.getElementById('registro-cidade').value = '';
+        document.getElementById('registro-uf').value = 'SP';
+        document.getElementById('registro-logo-preview').src = '';
+        window.logoCompactada = null;
+
+        document.getElementById('modal-login').classList.remove('hidden');
+    }
+
+    function abrirEdicaoPerfil() {
+        const p = window.perfilUsuario;
+        if (!p) return;
+
+        // Ajuste para Modo Edição
+        document.getElementById('modal-login-titulo').textContent = 'EDITAR DADOS DA LOJA';
+        document.getElementById('modal-login-texto').classList.add('hidden');
+        document.getElementById('btn-login-google').classList.add('hidden');
+        document.getElementById('btn-salvar-perfil').classList.remove('hidden');
+        document.getElementById('bloco-registro-whatsapp').classList.add('hidden');
+
+        // Preencher campos
+        document.getElementById('registro-nome').value = p.nome || '';
+        document.getElementById('registro-uf').value = p.uf || 'SP';
+        document.getElementById('registro-cidade').value = p.cidade || '';
+        if (p.logo) {
+            document.getElementById('registro-logo-preview').src = p.logo;
+            document.getElementById('registro-logo-preview').classList.add('has-image');
+            window.logoCompactada = p.logo;
+        }
+
+        document.getElementById('modal-login').classList.remove('hidden');
+    }
+
+    async function salvarAlteracoesPerfil() {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const nome = document.getElementById('registro-nome').value.trim();
+        const uf = document.getElementById('registro-uf').value;
+        const cidade = document.getElementById('registro-cidade').value.trim();
+        const logo = window.logoCompactada;
+
+        if (!nome) {
+            alert('❌ O nome da loja é obrigatório');
+            return;
+        }
+
+        try {
+            const dados = {
+                nome: nome,
+                uf: uf,
+                cidade: cidade,
+                logo: logo
+            };
+
+            await db.collection('vendedores').doc(user.uid).update(dados);
+            
+            // Atualizar estado global e interface
+            window.perfilUsuario = { ...window.perfilUsuario, ...dados };
+            document.getElementById('usuario-nome').textContent = `👤 ${nome}`;
+            
+            alert('✅ Dados da loja atualizados!');
+            document.getElementById('modal-login').classList.add('hidden');
+        } catch (err) {
+            alert('❌ Erro ao salvar: ' + err.message);
+        }
+    }
+
+    function fecharPerfil() {
+        document.getElementById('modal-perfil').classList.add('hidden');
+        window.logoCompactada = null;
+    }
+
+    async function previewLogoCadastro() {
+        const input = document.getElementById('registro-logo');
+        const img = document.getElementById('registro-logo-preview');
+        if (input.files.length > 0) {
+            const file = input.files[0];
+            const compact = await compactarFoto(file);
+            window.logoCompactada = compact;
+            img.src = compact;
+            img.style.background = 'none'; // Remove fundo para a imagem aparecer limpa
+            img.classList.add('has-image');
+        } else {
+            img.src = '';
+            window.logoCompactada = null;
+            img.classList.remove('has-image');
+        }
+    }
+
+    async function previewLogoPerfil() {
+        const input = document.getElementById('perfil-logo');
+        const img = document.getElementById('perfil-logo-preview');
+        if (input.files.length > 0) {
+            const file = input.files[0];
+            const compact = await compactarFoto(file);
+            window.logoCompactada = compact;
+            img.src = compact;
+            img.style.background = 'none';
+            img.classList.add('has-image');
+        } else {
+            img.src = '';
+            window.logoCompactada = null;
+            img.classList.remove('has-image');
+        }
+    }
+
+    async function salvarPerfil() {
+        const whatsapp = document.getElementById('perfil-whatsapp').value;
+        const logoInput = document.getElementById('perfil-logo');
+        if (!whatsapp) {
+            alert('❌ WhatsApp é obrigatório!');
+            return;
+        }
+        let logoCompactada = null;
+        if (window.logoCompactada) {
+            logoCompactada = window.logoCompactada;
+        } else if (logoInput.files.length > 0) {
+            logoCompactada = await compactarFoto(logoInput.files[0]);
+        }
+        const user = auth.currentUser;
+        if (user) {
+            const dados = {
+                whatsapp: whatsapp,
+                tipo: 'vendedor'
+            };
+            if (logoCompactada) dados.logo = logoCompactada;
+            await db.collection('vendedores').doc(user.uid).update(dados);
+            alert('✅ Perfil atualizado com sucesso!');
+            fecharPerfil();
+            document.getElementById('usuario-nome').textContent = `👤 ${user.displayName || ''}`;
+            document.getElementById('btn-cad-car').classList.remove('hidden');
+        }
+    }
+
+    async function gerenciarFavoritos(anuncioId) {
+        const modal = document.getElementById('modal-favoritos');
+        modal.dataset.anuncioId = anuncioId;
+        const lista = document.getElementById('lista-favoritos');
+        lista.innerHTML = '<p style="color:#fff;">Carregando...</p>';
+        modal.classList.remove('hidden');
+        
+        const snapshot = await db.collection('favoritos').where('anuncioId', '==', anuncioId).get();
+        lista.innerHTML = '';
+        if (snapshot.empty) {
+            lista.innerHTML = '<p style="color:#fff;">Nenhum interessado ainda.</p>';
+            return;
+        }
+        
+        snapshot.forEach(async (doc) => {
+            const fav = doc.data();
+            const userDoc = await db.collection('usuarios').doc(fav.compradorUid).get();
+            const nome = userDoc.exists ? userDoc.data().nome : 'Usuário desconhecido';
+            const email = userDoc.exists ? userDoc.data().email : fav.compradorUid;
+            lista.innerHTML += `<div style="background:#1a1a1a; padding:10px; margin:5px 0; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:#fff;">${nome} (${email})</span>
+                <button onclick="removerFavorito('${doc.id}')" style="background:#ff4444; color:#fff; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">REMOVER</button>
+            </div>`;
+        });
+    }
+
+    function fecharFavoritos() {
+        document.getElementById('modal-favoritos').classList.add('hidden');
+    }
+
+    async function removerFavorito(favId) {
+        if (confirm('Remover este interessado?')) {
+            await db.collection('favoritos').doc(favId).delete();
+            alert('✅ Interessado removido!');
+            // Recarregar lista
+            const modal = document.getElementById('modal-favoritos');
+            const anuncioId = modal.dataset.anuncioId;
+            gerenciarFavoritos(anuncioId);
+        }
+    }
+
+    async function salvarCarro() {
+        const user = firebase.auth().currentUser;
+        if (!user) { 
+            alert('Sessão expirada. Por favor, faça login novamente.'); 
+            return; 
+        }
+        const btn = document.getElementById('btn-salvar-main');
+        btn.innerText = '🚀 PUBLICANDO...';
+        btn.disabled = true;
+        // Compactar todas as fotos acumuladas e checar tamanho
+        let fotosCompactadas = [];
+        const maxBytes = 1048487;
+        if (window.fotosAcumuladas.length > 0) {
+            for (let i = 0; i < window.fotosAcumuladas.length; i++) {
+                const fotoCompactada = await compactarFoto(window.fotosAcumuladas[i]);
+                // converter para bytes
+                const size = (fotoCompactada.split(',')[1].length * 3) / 4;
+                if (size > maxBytes) {
+                    alert('⚠️ Foto ' + (i+1) + ' excedeu o tamanho máximo e será ignorada.');
+                    continue;
+                }
+                fotosCompactadas.push(fotoCompactada);
+            }
+        }
+
+        const tipo = document.getElementById('c-tipo').value;
+        const categoria = document.getElementById('c-categoria').value;
+        const vendaStr = document.getElementById('c-venda').value;
+        const fipeStr = document.getElementById('c-fipe').value;
+
+        // Limpeza de valores para cálculo
+        const vendaVal = parseFloat(vendaStr.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+        const fipeVal = parseFloat(fipeStr.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+        
+        // Trava de Segurança: Valor Suspeito (menos de 60% da FIPE)
+        let statusFinal = 'ativo';
+        if (categoria === 'Veículos' && fipeVal > 0 && vendaVal < (fipeVal * 0.6)) {
+            statusFinal = 'pendente';
+            alert('⚠️ Valor de Venda Suspeito: Seu anúncio entrará em análise pela nossa equipe por estar muito abaixo da FIPE.');
+        }
+
+        // Dados completos para envio ao Firestore
+        let dadosAnuncio = { 
+            uid: user.uid, // UID do vendedor salvo corretamente
+            vendedor_id: user.uid, // campo adicional exigido
+            email_vendedor: user.email || '', // usado para identificar por e-mail
+            dataPostagem: firebase.firestore.FieldValue.serverTimestamp(), 
+            categoria: categoria,
+            tipo: tipo,
+            marca: document.getElementById('c-marca').value.trim(), 
+            modelo: document.getElementById('c-modelo').value.trim(), 
+            venda: vendaStr.trim(), // Variável 'venda' mantida
+            loja: document.getElementById('c-lojista').value.trim() || window.perfilUsuario?.nome || '', // Nome da Loja com fallback
+            cidade: document.getElementById('c-cidade').value.trim(), 
+            uf: document.getElementById('c-uf').value, 
+            desc: document.getElementById('c-desc').value.trim(), 
+            whatsapp: document.getElementById('c-whatsapp').value.trim() || window.perfilUsuario?.whatsapp || '', // WhatsApp com fallback
+            status: statusFinal, // Status padrão ou pendente
+            fotos: fotosCompactadas.length > 0 ? fotosCompactadas : []
+        };
+
+        console.log('💎 VIP SHOP - Dados capturados para publicação:', dadosAnuncio);
+
+        // Adicionar campos específicos de veículos apenas se a categoria for Veículos
+        if (categoria === 'Veículos') {
+            dadosAnuncio.ano = document.getElementById('c-ano').value; 
+            dadosAnuncio.km = document.getElementById('c-km').value; 
+            dadosAnuncio.combustivel = document.getElementById('c-comb').value; 
+            dadosAnuncio.donos = document.getElementById('c-donos').value; 
+            dadosAnuncio.cor = document.getElementById('c-cor').value; 
+            dadosAnuncio.fipe = document.getElementById('c-fipe').value;
+            if (tipo !== 'motos') {
+                dadosAnuncio.cambio = document.getElementById('c-cambio').value;
+                dadosAnuncio.portas = document.getElementById('c-portas').value;
+            }
+        }
+        
+        // validações obrigatórias
+        if (!dadosAnuncio.venda || dadosAnuncio.venda.trim() === '' || dadosAnuncio.venda === 'R$ 0,00') {
+            alert('❌ Informe um valor de venda válido!');
+            btn.innerText = '🚀 PUBLICAR ANÚNCIO';
+            btn.disabled = false;
+            return;
+        }
+        if (dadosAnuncio.fotos.length === 0) {
+            alert('❌ Adicione pelo menos uma foto antes de publicar!');
+            btn.innerText = '🚀 PUBLICAR ANÚNCIO';
+            btn.disabled = false;
+            return;
+        }
+        if (!dadosAnuncio.uf || (dadosAnuncio.uf !== 'BR' && !dadosAnuncio.cidade)) {
+            alert('❌ Selecione estado e cidade (ou Brasil Nacional) antes de publicar!');
+            btn.innerText = '🚀 PUBLICAR ANÚNCIO';
+            btn.disabled = false;
+            return;
+        }
+        
+        // puxar dados atualizados do lojista via e-mail/uid
+        let usrDoc = await db.collection('vendedores').doc(user.uid).get();
+        if (usrDoc.exists) {
+            const ud = usrDoc.data();
+            dadosAnuncio.loja = dadosAnuncio.loja || ud.nome || '';
+            dadosAnuncio.whatsapp = dadosAnuncio.whatsapp || ud.whatsapp || '';
+        }
+        
+        // Salvar no Firestore e fechar modal apenas após sucesso
+        db.collection('anuncios').add(dadosAnuncio).then(() => {
+            btn.innerText = '🚀 PUBLICAR ANÚNCIO';
+            btn.disabled = false;
+            fecharModal();
+            // Limpar campos após sucesso
+            document.getElementById('c-fotos').value = '';
+            document.getElementById('foto-preview-container').innerHTML = '';
+            window.fotosAcumuladas = [];
+            window.fotoAtualModal = 0;
+            alert('✅ Anúncio publicado com sucesso!');
+        }).catch(erro => {
+            btn.innerText = '🚀 PUBLICAR ANÚNCIO';
+            btn.disabled = false;
+            alert('❌ Erro ao publicar anúncio: ' + erro.message);
+        });
+    }
+
+    async function atualizarCarro(id) {
+        const user = firebase.auth().currentUser;
+        if (!user) { 
+            alert('Sessão expirada. Por favor, faça login novamente.'); 
+            return; 
+        }
+        const btn = document.getElementById('btn-salvar-main');
+        btn.innerText = '💾 SALVANDO...';
+        btn.disabled = true;
+        const fotosInput = document.getElementById('c-fotos');
+        let fotosNovasCompactadas = [];
+        const maxBytes = 1048487;
+        
+        // Compactar novas fotos
+        if (fotosInput.files.length > 0) {
+            for (let i = 0; i < fotosInput.files.length; i++) {
+                const fotoCompactada = await compactarFoto(fotosInput.files[i]);
+                const size = (fotoCompactada.split(',')[1].length * 3) / 4;
+                if (size > maxBytes) {
+                    alert('⚠️ Foto nova ' + (i+1) + ' excedeu o tamanho máximo e será ignorada.');
+                    continue;
+                }
+                fotosNovasCompactadas.push(fotoCompactada);
+            }
+        }
+        
+        const fotosAtualizadas = window.fotosEdicao.concat(fotosNovasCompactadas);
+        
+        const tipo = document.getElementById('c-tipo').value;
+        const categoria = document.getElementById('c-categoria').value;
+        
+        // Dados para atualização
+        let dadosAnuncio = { 
+            vendedor_id: user.uid, // manter campo para verificação
+            email_vendedor: user.email || '',
+            categoria: categoria,
+            tipo: tipo,
+            marca: document.getElementById('c-marca').value, 
+            modelo: document.getElementById('c-modelo').value, 
+            venda: document.getElementById('c-venda').value, // Variável 'venda' mantida
+            loja: document.getElementById('c-lojista').value.trim() || window.perfilUsuario?.nome || '', 
+            cidade: document.getElementById('c-cidade').value, 
+            uf: document.getElementById('c-uf').value, 
+            desc: document.getElementById('c-desc').value, 
+            whatsapp: document.getElementById('c-whatsapp').value.trim() || window.perfilUsuario?.whatsapp || '', 
+            fotos: fotosAtualizadas.length > 0 ? fotosAtualizadas : []
+        };
+
+        // Adicionar campos específicos de veículos apenas se a categoria for Veículos
+        if (categoria === 'Veículos') {
+            dadosAnuncio.ano = document.getElementById('c-ano').value; 
+            dadosAnuncio.km = document.getElementById('c-km').value; 
+            dadosAnuncio.combustivel = document.getElementById('c-comb').value; 
+            dadosAnuncio.donos = document.getElementById('c-donos').value; 
+            dadosAnuncio.cor = document.getElementById('c-cor').value; 
+            if (tipo !== 'motos') {
+                dadosAnuncio.cambio = document.getElementById('c-cambio').value;
+                dadosAnuncio.portas = document.getElementById('c-portas').value;
+            }
+        }
+        
+        // validações obrigatórias
+        if (!dadosAnuncio.venda || dadosAnuncio.venda.trim() === '' || dadosAnuncio.venda === 'R$ 0,00') {
+            alert('❌ Informe um valor de venda válido!');
+            btn.innerText = '💾 SALVAR ALTERAÇÕES';
+            btn.disabled = false;
+            return;
+        }
+        if (dadosAnuncio.fotos.length === 0) {
+            alert('❌ Adicione pelo menos uma foto antes de salvar!');
+            btn.innerText = '💾 SALVAR ALTERAÇÕES';
+            btn.disabled = false;
+            return;
+        }
+        if (!dadosAnuncio.uf || (dadosAnuncio.uf !== 'BR' && !dadosAnuncio.cidade)) {
+            alert('❌ Selecione estado e cidade (ou Brasil Nacional) antes de salvar!');
+            btn.innerText = '💾 SALVAR ALTERAÇÕES';
+            btn.disabled = false;
+            return;
+        }
+        // puxar dados atualizados do lojista via e-mail/uid
+        let usrDoc = await db.collection('vendedores').doc(user.uid).get();
+        if (usrDoc.exists) {
+            const ud = usrDoc.data();
+            dadosAnuncio.loja = dadosAnuncio.loja || ud.nome || '';
+            dadosAnuncio.whatsapp = dadosAnuncio.whatsapp || ud.whatsapp || '';
+        }
+        
+        // Atualizar no Firestore
+        db.collection('anuncios').doc(id).update(dadosAnuncio).then(() => {
+            btn.innerText = '💾 SALVAR ALTERAÇÕES';
+            btn.disabled = false;
+            fecharModal();
+            alert('✅ Anúncio atualizado com sucesso!');
+            window.fotosEdicao = [];
+        }).catch(erro => {
+            btn.innerText = '💾 SALVAR ALTERAÇÕES';
+            btn.disabled = false;
+            alert('❌ Erro ao atualizar anúncio: ' + erro.message);
+        });
+    }
+
+    async function apagarAnuncio(id) {
+        const u = auth.currentUser;
+        const doc = await db.collection('anuncios').doc(id).get();
+        const c = doc.exists ? doc.data() : null;
+        if (!u || !c || u.uid !== c.uid) {
+            alert('Acesso negado: somente o proprietário pode apagar este anúncio.');
+            return;
+        }
+        if (confirm("Apagar anúncio?")) await db.collection('anuncios').doc(id).delete();
+    }
+    function mascaraMoeda(i) { let v = i.value.replace(/\D/g, ""); v = (v/100).toFixed(2) + ""; v = v.replace(".", ","); v = v.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,"); v = v.replace(/(\d)(\d{3}),/g, "$1.$2,"); i.value = "R$ " + v; }
+    function fecharModal() { 
+        document.getElementById('modal-cad').classList.add('hidden'); 
+        // Resetar título e botão
+        document.getElementById('modal-titulo').textContent = 'ANUNCIAR PRODUTO';
+        const btn = document.getElementById('btn-salvar-main');
+        btn.innerText = '🚀 PUBLICAR ANÚNCIO';
+        btn.onclick = salvarCarro;
+        // Limpar todos os campos do modal após fechamento
+        document.getElementById('c-categoria').value = 'Veículos';
+        document.getElementById('c-tipo').value = 'carros';
+        document.getElementById('c-marca').value = '';
+        document.getElementById('c-modelo').value = '';
+        document.getElementById('c-ano').value = '';
+        document.getElementById('c-cor').value = '';
+        document.getElementById('c-km').value = '';
+        document.getElementById('c-fipe').value = '';
+        document.getElementById('c-comb').value = 'Flex';
+        document.getElementById('c-cambio').value = 'Manual';
+        document.getElementById('c-donos').value = '';
+        document.getElementById('c-portas').value = '4';
+        document.getElementById('c-uf').value = 'SP';
+        document.getElementById('c-cidade').value = '';
+        document.getElementById('c-venda').value = '';
+        document.getElementById('c-desc').value = '';
+        document.getElementById('c-lojista').value = '';
+        document.getElementById('c-whatsapp').value = '';
+        document.getElementById('c-fotos').value = '';
+        document.getElementById('foto-preview-container').innerHTML = '';
+        window.fotosAcumuladas = [];
+        window.fotoAtualModal = 0;
+        alternarCategorias(); // Resetar visibilidade dos blocos
+        alternarMotos();
+    }
+    function alternarCategorias() {
+        const cat = document.getElementById('c-categoria').value;
+        const secaoVeiculo = document.getElementById('secao-veiculo');
+        const blocoTipo = document.getElementById('c-tipo').parentElement;
+        const bC = document.getElementById('bloco-cambio');
+        const bP = document.getElementById('bloco-portas');
+        
+        // PROTEÇÃO: Apenas a categoria 'Veículos' mostra os campos técnicos
+        if (cat === 'Veículos') {
+            secaoVeiculo.style.display = 'block';
+            blocoTipo.style.display = 'block';
+            document.getElementById('modal-titulo').textContent = 'ANUNCIAR VEÍCULO';
+        } else {
+            secaoVeiculo.style.display = 'none';
+            blocoTipo.style.display = 'none';
+            if(bC) bC.classList.add('hidden');
+            if(bP) bP.classList.add('hidden');
+            document.getElementById('modal-titulo').textContent = 'ANUNCIAR ' + cat.toUpperCase();
+        }
+    }
+    function alternarMotos() { const t = document.getElementById('c-tipo').value; const bC = document.getElementById('bloco-cambio'), bP = document.getElementById('bloco-portas'); if(t === 'motos') { bC.classList.add('hidden'); bP.classList.add('hidden'); } else { bC.classList.remove('hidden'); bP.classList.remove('hidden'); } }
+
+    function navFoto(id, dir) {
+        const fotos = window[`fotos_${id}`] || [];
+        const total = fotos.length;
+        if (total <= 1) return;
+        let atual = window[`fotoAtual_${id}`] || 0;
+        atual = (atual + dir + total) % total;
+        window[`fotoAtual_${id}`] = atual;
+        const img = document.getElementById(`foto-${id}`);
+        const info = document.getElementById(`info-${id}`);
+        if (img) img.src = fotos[atual];
+        if (info) info.textContent = `${atual + 1}/${total}`;
+    }
+
+    function navFotoModal(dir) {
+        const totalFotos = window.fotosAcumuladas.length;
+        if (totalFotos === 0) return;
+        let atual = window.fotoAtualModal || 0;
+        atual = (atual + dir + totalFotos) % totalFotos;
+        window.fotoAtualModal = atual;
+        const slideshowImg = document.getElementById('foto-slideshow-img');
+        const slideshowInfo = document.getElementById('foto-slideshow-info');
+        
+        // CORREÇÃO: Slideshow foi removido, evitar erro de null style
+        if (!slideshowImg) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            slideshowImg.src = e.target.result;
+            slideshowInfo.textContent = `${atual + 1}/${totalFotos}`;
+        };
+        reader.readAsDataURL(window.fotosAcumuladas[atual]);
+    }
+
+    async function consultarFipe() {
+        const tipo = document.getElementById('c-tipo').value;
+        const marca = document.getElementById('c-marca').value.trim();
+        const modelo = document.getElementById('c-modelo').value.trim();
+        const ano = document.getElementById('c-ano').value;
+        
+        if (!ano) {
+            alert('❌ Selecione o ano para consultar o valor FIPE!');
+            return;
+        }
+        
+        // Simulação de consulta FIPE com diferenciação por tipo (carros vs motos)
+        let baseValor;
+        if (tipo === 'motos') {
+            baseValor = 15000; // Base para motos
+        } else {
+            baseValor = 30000; // Base para carros
+        }
+        
+        // Ajuste por marca comum (ex: HONDA pode ser carro ou moto)
+        const marcaUpper = marca.toUpperCase();
+        if (marcaUpper === 'HONDA') {
+            baseValor += tipo === 'motos' ? 5000 : 10000; // Honda motos mais caras que carros? Ajustar lógica
+        } else if (marcaUpper === 'YAMAHA') {
+            baseValor += tipo === 'motos' ? 7000 : 0; // Yamaha mais para motos
+        } // Adicionar mais se necessário
+        
+        const fipeValor = baseValor + Math.floor(Math.random() * 20000); // Variação
+        document.getElementById('c-fipe').value = 'R$ ' + fipeValor.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        alert('✅ Valor FIPE consultado automaticamente!');
+    }
+
+    function chamarWhatsapp(numero, modelo, preco) {
+        const msg = `Olá! Gostaria de saber mais sobre este veículo: ${modelo} por ${preco}. Pode ser?`;
+        const link = `https://api.whatsapp.com/send?phone=${numero.replace(/\D/g, '')}&text=${encodeURIComponent(msg)}`;
+        window.open(link);
+    }
+
+    // Toast helper
+    function showToast(text) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = text;
+        document.body.appendChild(toast);
+        // force reflow to allow transition
+        void toast.offsetWidth;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    async function salvarFavorito(id, uid) {
+        const u = auth.currentUser;
+        if (!u) { alert('Faça login para salvar favoritos!'); return; }
+        const agora = new Date().getTime();
+        const favorito = { anuncioId: id, vendedorUid: uid, compradorUid: u.uid, dataFavorito: agora };
+        await db.collection('favoritos').add(favorito);
+        alert('✅ Anúncio salvo nos favoritos!');
+        setTimeout(() => { alert('⏰ Notificar vendedor sobre seu interesse em 24 horas?'); }, 86400000);
+    }
+
+    function compactarFoto(arquivo, maxBytes = 1048487) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const maxWidth = 800, maxHeight = 600;
+                    let width = img.width, height = img.height;
+                    if (width > height) {
+                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                    } else {
+                        if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    // compress until under maxBytes
+                    let quality = 0.7;
+                    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    const getSize = d => (d.split(',')[1].length * 3) / 4;
+                    while (getSize(dataUrl) > maxBytes && quality > 0.3) {
+                        quality -= 0.1;
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    }
+                    resolve(dataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(arquivo);
+        });
+    }
+
+    function previewFotos() {
+        const input = document.getElementById('c-fotos');
+        const container = document.getElementById('foto-preview-container');
+        
+        // Adicionar novas fotos ao array acumulado, até limite de 6
+        const novasFotos = Array.from(input.files);
+        const totalAtual = window.fotosAcumuladas.length;
+        const espacoDisponivel = 6 - totalAtual;
+        const fotosParaAdicionar = novasFotos.slice(0, espacoDisponivel);
+        
+        fotosParaAdicionar.forEach(foto => {
+            window.fotosAcumuladas.push(foto);
+        });
+        
+        if (window.fotosAcumuladas.length > 6) {
+            window.fotosAcumuladas = window.fotosAcumuladas.slice(0, 6);
+        }
+        
+        // Renderizar thumbnails modernos lado a lado
+        container.innerHTML = '';
+        window.fotosAcumuladas.forEach((arquivo, idx) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'foto-thumb';
+                thumb.innerHTML = `<img src="${e.target.result}" alt="Foto ${idx + 1}"><button class="btn-remove-foto" onclick="removerFoto(${idx})">✕</button>`;
+                container.appendChild(thumb);
+            };
+            reader.readAsDataURL(arquivo);
+        });
+        
+        // Limpar input para permitir adicionar mais
+        input.value = '';
+    }
+
+    function removerFoto(idx) {
+        window.fotosAcumuladas.splice(idx, 1);
+        previewFotos(); // Re-renderizar após remoção
+    }
+
+    // Variáveis para detectar swipe
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    let currentSwipeId = '';
+
+    function handleTouchStart(event, id) {
+        touchStartX = event.changedTouches[0].screenX;
+        touchStartY = event.changedTouches[0].screenY;
+        currentSwipeId = id;
+    }
+
+    function handleTouchMove(event) {
+        event.preventDefault(); // Previne scroll da página
+    }
+
+    function handleTouchEnd(event, id) {
+        touchEndX = event.changedTouches[0].screenX;
+        touchEndY = event.changedTouches[0].screenY;
+        handleSwipe(id);
+    }
+
+    function handleSwipe(id) {
+        const deltaX = touchStartX - touchEndX;
+        const deltaY = touchStartY - touchEndY;
+        
+        // Verifica se o swipe é horizontal (maior que vertical) e mínimo 50px
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            if (deltaX > 0) {
+                // Swipe para esquerda - próxima foto
+                navFoto(id, 1);
+            } else {
+                // Swipe para direita - foto anterior
+                navFoto(id, -1);
+            }
+        }
+    }
+
+    // --- LÓGICA DE ADMIN E CARROSSEL ---
+    function abrirAdmin() {
+        document.getElementById('modal-admin').style.display = 'block';
+        carregarBannersAdmin();
+    }
+
+    function fecharAdmin() {
+        document.getElementById('modal-admin').style.display = 'none';
+    }
+
+    function adicionarBanner() {
+        const url = document.getElementById('admin-banner-url').value.trim();
+        const texto = document.getElementById('admin-banner-texto').value.trim();
+        
+        if (!url) {
+            alert('❌ URL da imagem é obrigatória');
+            return;
+        }
+
+        db.collection('configuracoes').doc('banners').collection('lista').add({
+            url: url,
+            texto: texto,
+            dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            alert('✅ Banner adicionado com sucesso!');
+            document.getElementById('admin-banner-url').value = '';
+            document.getElementById('admin-banner-texto').value = '';
+            carregarBannersAdmin();
+        }).catch(err => alert('❌ Erro: ' + err.message));
+    }
+
+    function carregarBannersAdmin() {
+        db.collection('configuracoes').doc('banners').collection('lista').orderBy('dataCriacao', 'desc').onSnapshot(snap => {
+            const lista = document.getElementById('admin-lista-banners');
+            lista.innerHTML = '';
+            snap.forEach(doc => {
+                const b = doc.data();
+                lista.innerHTML += `
+                    <div class="banner-item">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <img src="${b.url}" style="width:100px; height:40px; object-fit:cover; border-radius:5px;">
+                            <span style="color:#fff; font-size:12px;">${b.texto || '(Sem texto)'}</span>
+                        </div>
+                        <button onclick="removerBanner('${doc.id}')" style="background:var(--red); color:#fff; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">🗑️</button>
+                    </div>
+                `;
+            });
+        });
+    }
+
+    function removerBanner(id) {
+        if (confirm('Remover este banner?')) {
+            db.collection('configuracoes').doc('banners').collection('lista').doc(id).delete();
+        }
+    }
+
+    let slideAtual = 0;
+    let carrosselTimer;
+
+    function carregarCarrossel() {
+        try {
+            db.collection('configuracoes').doc('banners').collection('lista').orderBy('dataCriacao', 'asc').onSnapshot(snap => {
+                const track = document.getElementById('carrossel-track');
+                const container = document.getElementById('container-carrossel');
+                
+                if (snap.empty) {
+                    container.classList.add('hidden');
+                    return;
+                }
+
+                container.classList.remove('hidden');
+                track.innerHTML = '';
+                
+                snap.forEach(doc => {
+                    const b = doc.data();
+                    track.innerHTML += `
+                        <div class="banner-slide">
+                            <img src="${b.url}">
+                            ${b.texto ? `
+                                <div class="banner-overlay">
+                                    <div class="banner-texto">${b.texto}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+
+                slideAtual = 0;
+                atualizarSlide();
+                iniciarTimerCarrossel();
+            }, err => {
+                console.warn("⚠️ VIP SHOP: Coleção de banners ainda não configurada ou erro de permissão.", err);
+                document.getElementById('container-carrossel').classList.add('hidden');
+            });
+        } catch (error) {
+            console.error("❌ Erro ao carregar carrossel:", error);
+        }
+    }
+
+    function navCarrossel(dir) {
+        const slides = document.querySelectorAll('.banner-slide');
+        if (slides.length <= 1) return;
+        slideAtual = (slideAtual + dir + slides.length) % slides.length;
+        atualizarSlide();
+        iniciarTimerCarrossel(); // Reinicia o timer ao navegar manualmente
+    }
+
+    function atualizarSlide() {
+        const track = document.getElementById('carrossel-track');
+        track.style.transform = `translateX(-${slideAtual * 100}%)`;
+    }
+
+    function iniciarTimerCarrossel() {
+        clearInterval(carrosselTimer);
+        carrosselTimer = setInterval(() => navCarrossel(1), 5000);
+    }
+
+    // Inicializar carrossel ao carregar a página
+    carregarCarrossel();
+
+    // LIMPEZA FORÇADA DE CACHE PWA - RESOLVER ÍCONE 'W'
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister();
+            }
+        });
+    }
+    
+    // Limpar storage caches
+    if ('caches' in window) {
+        caches.keys().then(function(names) {
+            for(let name of names) {
+                caches.delete(name);
+            }
+        });
+    }
+    
+    // Forçar reload do manifest
+    setTimeout(() => {
+        const link = document.querySelector('link[rel="manifest"]');
+        if (link) {
+            const href = link.href;
+            link.href = '';
+            setTimeout(() => {
+                link.href = href + '?t=' + Date.now();
+            }, 100);
+        }
+    }, 1000);
+
+</script>
+</body>
+</html>

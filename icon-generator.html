@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Ícone ZeCar VIP SHOP</title>
+</head>
+<body>
+    <canvas id="iconCanvas" width="192" height="192" style="border: 1px solid #ccc;"></canvas>
+    <br><br>
+    <button onclick="generateIcon()">Gerar Ícone</button>
+    <button onclick="downloadIcon()">Baixar Ícone</button>
+    
+    <script>
+        function generateIcon() {
+            const canvas = document.getElementById('iconCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Fundo preto
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 192, 192);
+            
+            // Gradiente laranja metálico para o carro
+            const gradient = ctx.createLinearGradient(30, 80, 162, 120);
+            gradient.addColorStop(0, '#FF6B35');
+            gradient.addColorStop(0.5, '#FF8C42');
+            gradient.addColorStop(1, '#FFA947');
+            
+            // Corpo do carro esportivo (estilo simplificado)
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(30, 120);
+            ctx.lineTo(50, 100);
+            ctx.lineTo(80, 85);
+            ctx.lineTo(120, 85);
+            ctx.lineTo(150, 100);
+            ctx.lineTo(162, 120);
+            ctx.lineTo(150, 130);
+            ctx.lineTo(30, 130);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Detalhes do carro
+            ctx.strokeStyle = '#FF4500';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Janelas
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(60, 90, 25, 15);
+            ctx.fillRect(95, 90, 25, 15);
+            
+            // Rodas
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(55, 130, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(137, 130, 12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Detalhes das rodas
+            ctx.fillStyle = '#666';
+            ctx.beginPath();
+            ctx.arc(55, 130, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(137, 130, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Texto "ZeCar" embaixo
+            ctx.fillStyle = '#FF6B35';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('ZeCar', 96, 160);
+            
+            // Brilho/luxo
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.fillRect(70, 75, 40, 3);
+        }
+        
+        function downloadIcon() {
+            const canvas = document.getElementById('iconCanvas');
+            const link = document.createElement('a');
+            link.download = 'icon-192.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Gerar automaticamente ao carregar
+        window.onload = generateIcon;
+    </script>
+</body>
+</html>

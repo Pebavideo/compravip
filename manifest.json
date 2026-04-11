@@ -1,0 +1,17 @@
+{
+  "name": "VIP SHOP",
+  "short_name": "VIP SHOP",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIGZpbGw9IiMwMDAwMDAiLz4KICA8cGF0aCBkPSJNMTEyIDMyMGgxNnYxNmgzMjB2LTE2aDE2djY0aC0zNTJ6IiBmaWxsPSIjRkY5ODAwIi8+CiAgPHBhdGggZD0iTTQzMiAxNjBMMzUyIDgwSDE2MEw4MCAxNjB2MTYwaDM1MnoiIGZpbGw9IiNGRjk4MDAiLz4KICA8cGF0aCBkPSJNNDA4IDE3NkgyNzJ2LTUzaDUzeiIgZmlsbD0iI2ZmYjc0ZCIvPgogIDxwYXRoIGQ9Ik0yNDggMTc2SDEwNHYtNTNoNTN6IiBmaWxsPSIjZmZiNzRkIi8+CiAgPHJlY3QgeD0iNDA4IiB5PSIyNDAiIHdpZHRoPSI0MCIgaGVpZ2h0PSIxNiIgZmlsbD0iI2ZmYjc0ZCIvPgogIDxyZWN0IHg9IjY0IiB5PSIyNDAiIHdpZHRoPSI0MCIgaGVpZ2h0PSIxNiIgZmlsbD0iI2ZmYjc0ZCIvPgogIDxwYXRoIGQ9Ik00MDAgMzIwYTU2IDU2IDAgMSAwIDExMiAwaDE2YTU2IDU2IDAgMSAwLTExMiAwem04OCA5NmE0MCA0MCAwIDEgMS04MCAwIDQwIDQwIDAgMSAxIDgwIDB6TTgwIDMyMGE1NiA1NiAwIDEgMCAxMTIgMGgxNmE1NiA1NiAwIDEgMC0xMTIgMHptODggOTZhNDAgNDAgMCAxIDEtODAgMCA0MCA0MCAwIDEgMSA4MCAweiIgZmlsbD0iI2ZmYjc0ZCIvPgo8L3N2Zz4=",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
